@@ -2,16 +2,16 @@
 
 import { useState, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, MessageSquare, XCircle, Info, FileText, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, MessageSquare, XCircle } from "lucide-react";
 import { mockCases } from "@/lib/mockData";
 import { Tabs } from "@/components/ui/Tabs";
 import { Badge } from "@/components/ui/Badge";
 import { ExtractedField } from "@/components/review/ExtractedField";
 import { ExtractedField as ExtractedFieldType } from "@/lib/types";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { PDFViewer } from "@/components/ui/PDFViewer";
 
 export default function ReviewInterfacePage({ params }: { params: Promise<{ caseId: string }> }) {
-  // Use React.use to unwrap params in Next.js 15
   const { caseId } = use(params);
   const initialCase = mockCases.find(c => c.id === caseId) || mockCases[0];
   const [caseData, setCaseData] = useState(initialCase);
@@ -83,220 +83,158 @@ export default function ReviewInterfacePage({ params }: { params: Promise<{ case
 
       {/* SPLIT VIEW */}
       <div className="flex-1 flex overflow-hidden">
-        {/* LEFT: PDF Viewer Simulation (60%) */}
-        <div className="w-[55%] flex flex-col border-r border-[var(--border)] bg-gray-100 relative">
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[var(--surface)] shadow-md rounded-full px-4 py-2 flex items-center gap-4 z-10 border border-[var(--border)]">
-            <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-bold text-lg">-</button>
-            <span className="text-sm font-medium">100%</span>
-            <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-bold text-lg">+</button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-10 flex justify-center custom-scrollbar">
-            {/* Simulated PDF Page */}
-            <div className="bg-white shadow-xl w-full max-w-[700px] h-max p-16 flex flex-col gap-6 text-sm leading-relaxed text-gray-800 font-serif relative">
-              <h1 className="text-center font-bold text-xl mb-6 border-b border-gray-300 pb-4">IN THE HIGH COURT OF KARNATAKA AT BENGALURU</h1>
-              
-              <p>DATED THIS THE 15TH DAY OF MARCH 2025</p>
-              
-              <p>BEFORE</p>
-              <p className={`cursor-pointer relative group transition-colors p-1 -m-1 rounded ${highlightedSource === 'page1-para5' ? 'bg-yellow-300 shadow-[0_0_0_4px_#fde047]' : 'bg-yellow-100 hover:bg-yellow-200'}`}>
-                THE HON'BLE MR. JUSTICE A.K. SHARMA
-              </p>
-              
-              <div className="flex justify-between my-4">
-                <div>
-                  <p>BETWEEN:</p>
-                  <p className={`cursor-pointer relative mt-1 group transition-colors p-1 -m-1 rounded ${highlightedSource === 'page1-para3' ? 'bg-yellow-300 shadow-[0_0_0_4px_#fde047]' : 'bg-yellow-100 hover:bg-yellow-200'}`}>
-                    State of Karnataka,<br/>Rep by its Secretary,<br/>Public Works Department.
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p>... PETITIONER</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between my-4">
-                <div>
-                  <p>AND:</p>
-                  <p className={`cursor-pointer relative mt-1 group transition-colors p-1 -m-1 rounded ${highlightedSource === 'page1-para4' ? 'bg-yellow-300 shadow-[0_0_0_4px_#fde047]' : 'bg-yellow-100 hover:bg-yellow-200'}`}>
-                    M/s Apex Constructions Ltd,<br/>No 45, Industrial Area.
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p>... RESPONDENT</p>
-                </div>
-              </div>
-
-              <p className="text-center font-bold mt-8 mb-4 underline">ORDER</p>
-
-              <p>1. The present writ petition is filed challenging the impugned order dated 12.01.2024 passed by the competent authority...</p>
-              
-              <p className={`cursor-pointer relative group p-2 -m-2 rounded mt-2 transition-colors ${highlightedSource === 'page3-para1' || highlightedSource === 'page3-para2' ? 'bg-yellow-300 shadow-[0_0_0_4px_#fde047]' : 'bg-yellow-100 hover:bg-yellow-200'}`}>
-                2. Having heard the learned counsels for both parties, <span className="font-bold">the respondent shall submit the revised compliance report reflecting the recent ecological survey.</span> Furthermore, <span className="font-bold">the concerned department must disburse the withheld payments within 4 weeks.</span>
-              </p>
-
-              <p className={`cursor-pointer relative group p-2 -m-2 rounded mt-6 transition-colors ${highlightedSource === 'page4-para1' || highlightedSource === 'page4-para2' ? 'bg-yellow-300 shadow-[0_0_0_4px_#fde047]' : 'bg-yellow-100 hover:bg-yellow-200'}`}>
-                3. The petitioner is directed to ensure <span className="font-bold">compliance by 12 April 2025</span>. Any appeal against this order must be filed within the statutory limitation period of 90 days, expiring on <span className="font-bold">13 June 2025</span>.
-              </p>
-
-              <div className="mt-16 text-right font-bold italic">
-                <p>Sd/-</p>
-                <p>JUDGE</p>
-              </div>
-            </div>
-          </div>
+        {/* LEFT: PDF Viewer (55%) */}
+        <div className="w-[55%] flex flex-col border-r border-[var(--border)]">
+          <PDFViewer 
+            onTextSelect={(text, position) => {
+              setHighlightedSource(text);
+            }}
+            highlightedText={highlightedSource ? [highlightedSource] : []}
+          />
         </div>
 
-        {/* RIGHT: Data Editor (45%) */}
-        <div className="w-[45%] flex flex-col bg-[var(--surface)] relative h-full">
-          <Tabs 
-            tabs={["Extraction", "Action Plan", "Audit Trail"]} 
-            activeTab={activeTab} 
-            onChange={setActiveTab}
-            className="shrink-0 bg-[var(--surface-raised)]"
-          />
-          
-          <div className="flex-1 overflow-y-auto pb-24 custom-scrollbar">
-            {activeTab === "Extraction" && (
-              <div className="flex flex-col">
-                <div className="bg-[var(--surface-raised)] px-4 py-2 border-b border-[var(--border)] sticky top-0 z-10 shadow-sm">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-2">
-                    <FileText className="w-3 h-3" /> Case Information
-                  </h3>
-                </div>
-                <div>
-                  {caseData.extractedFields.caseInformation.map((field, idx) => (
-                    <ExtractedField 
-                      key={`case-${idx}`} 
-                      field={field} 
-                      onUpdate={(f) => handleUpdateField("caseInformation", idx, f)} 
-                      onHighlightSource={setHighlightedSource}
-                    />
-                  ))}
-                </div>
-
-                <div className="bg-[var(--surface-raised)] px-4 py-2 border-y border-[var(--border)] sticky top-0 z-10 shadow-sm mt-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-2">
-                    <AlertTriangle className="w-3 h-3" /> Key Directions
-                  </h3>
-                </div>
-                <div>
-                  {caseData.extractedFields.keyDirections.map((field, idx) => (
-                    <ExtractedField 
-                      key={`dir-${idx}`} 
-                      field={field} 
-                      onUpdate={(f) => handleUpdateField("keyDirections", idx, f)} 
-                      onHighlightSource={setHighlightedSource}
-                    />
-                  ))}
-                  <button className="w-full py-3 text-sm text-[var(--accent-blue)] font-medium hover:bg-[var(--surface-raised)] transition-colors border-b border-[var(--border)]">+ Add Direction Manually</button>
-                </div>
-
-                <div className="bg-[var(--surface-raised)] px-4 py-2 border-y border-[var(--border)] sticky top-0 z-10 shadow-sm mt-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-2">
-                    <CheckCircle2 className="w-3 h-3" /> Timelines
-                  </h3>
-                </div>
-                <div>
-                  {caseData.extractedFields.timelines.map((field, idx) => (
-                    <ExtractedField 
-                      key={`time-${idx}`} 
-                      field={field} 
-                      onUpdate={(f) => handleUpdateField("timelines", idx, f)} 
-                      onHighlightSource={setHighlightedSource}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "Action Plan" && caseData.actionPlan && (
-              <div className="p-6 flex flex-col gap-6">
-                <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 flex gap-3 text-sm leading-relaxed">
-                  <Info className="w-5 h-5 shrink-0 mt-0.5" />
-                  <p>AI has generated a preliminary action plan based on the extracted directives. Review and assign responsible departments before saving.</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Action Type</label>
-                    <select 
-                      className="bg-[var(--surface)] border border-[var(--border-strong)] rounded-lg p-2.5 text-sm text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
-                      defaultValue={caseData.actionPlan.actionType}
-                    >
-                      <option value="COMPLIANCE">Compliance</option>
-                      <option value="APPEAL">Appeal</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Priority</label>
-                    <select 
-                      className="bg-[var(--surface)] border border-[var(--border-strong)] rounded-lg p-2.5 text-sm text-[var(--text-primary)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
-                      defaultValue={caseData.actionPlan.priority}
-                    >
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High</option>
-                      <option value="CRITICAL">Critical</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Responsible Department</label>
-                  <select 
-                    className="bg-[var(--surface)] border border-[var(--border-strong)] rounded-lg p-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
-                    defaultValue={caseData.actionPlan.departmentId}
-                  >
-                    <option value="dept-pwd">Public Works Department</option>
-                    <option value="dept-rev">Revenue Department</option>
-                    <option value="dept-edu">Education Department</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Required Actions</label>
-                  <div className="flex flex-col gap-2">
-                    {caseData.actionPlan.steps.map((step, idx) => (
-                      <div key={step.id} className="flex items-start gap-2 group">
-                        <div className="w-6 h-6 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center shrink-0 mt-1">
-                          <span className="text-xs font-mono font-medium text-[var(--text-muted)]">{idx + 1}</span>
-                        </div>
-                        <input 
-                          type="text" 
-                          defaultValue={step.description}
-                          className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg p-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] hover:border-[var(--border-strong)] transition-colors"
-                        />
-                        <button className="opacity-0 group-hover:opacity-100 p-2 text-[var(--text-muted)] hover:text-[var(--critical)] transition-all">
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                    <button className="text-sm text-[var(--accent-blue)] font-medium flex items-center gap-1 mt-2 w-max hover:underline">
-                      + Add Step
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col gap-2 mt-2">
-                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Reviewer Notes</label>
-                  <textarea 
-                    className="w-full min-h-[100px] bg-[var(--surface)] border border-[var(--border-strong)] rounded-lg p-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)]"
-                    placeholder="Add internal notes for the department..."
-                    defaultValue={caseData.actionPlan.reviewerNotes}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* BOTTOM PROGRESS BAR */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[var(--border)] bg-[var(--surface)] z-20 flex flex-col gap-2 shadow-[0_-4px_6px_-1px_rgb(0_0_0_/_0.05)]">
-            <div className="flex justify-between items-center text-xs font-bold text-[var(--text-secondary)]">
-              <span>Verification Progress</span>
-              <span className={progress === 100 ? "text-[var(--status-verified)]" : ""}>{verifiedCount} of {totalCount} fields verified</span>
+        {/* RIGHT: Review Panel (45%) */}
+        <div className="w-[45%] flex flex-col bg-[var(--surface)] overflow-hidden">
+          <div className="flex-1 overflow-y-auto flex flex-col custom-scrollbar">
+            {/* Tabs */}
+            <div className="shrink-0 border-b border-[var(--border)] px-6 pt-6">
+              <Tabs
+                tabs={["Extraction", "Action Plan", "AI Reasoning"]}
+                activeTab={activeTab}
+                onChange={setActiveTab}
+              />
             </div>
-            <ProgressBar progress={progress} color={progress === 100 ? "bg-[var(--status-verified)]" : "bg-[var(--accent-blue)]"} height="h-2" />
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+              {activeTab === "Extraction" && (
+                <div className="space-y-6">
+                  {/* Progress */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">Overall Progress</span>
+                      <span className="text-sm font-bold text-[var(--accent-blue)]">{Math.round(progress)}%</span>
+                    </div>
+                    <ProgressBar progress={progress} />
+                  </div>
+
+                  {/* Extraction Fields */}
+                  {caseData.extractedFields && (
+                    <>
+                      {/* Case Information */}
+                      {caseData.extractedFields.caseInformation.length > 0 && (
+                        <div>
+                          <h3 className="font-bold text-[var(--text-primary)] mb-3 uppercase text-xs tracking-wider">Case Information</h3>
+                          <div className="space-y-3">
+                            {caseData.extractedFields.caseInformation.map((field, idx) => (
+                              <ExtractedField
+                                key={idx}
+                                field={field}
+                                onUpdate={(updated) => handleUpdateField("caseInformation", idx, updated)}
+                                onHighlightSource={() => setHighlightedSource(field.sourceRef)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Key Directions */}
+                      {caseData.extractedFields.keyDirections.length > 0 && (
+                        <div className="pt-6 border-t border-[var(--border)]">
+                          <h3 className="font-bold text-[var(--text-primary)] mb-3 uppercase text-xs tracking-wider">Key Directions</h3>
+                          <div className="space-y-3">
+                            {caseData.extractedFields.keyDirections.map((field, idx) => (
+                              <ExtractedField
+                                key={idx}
+                                field={field}
+                                onUpdate={(updated) => handleUpdateField("keyDirections", idx, updated)}
+                                onHighlightSource={() => setHighlightedSource(field.sourceRef)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Timelines */}
+                      {caseData.extractedFields.timelines.length > 0 && (
+                        <div className="pt-6 border-t border-[var(--border)]">
+                          <h3 className="font-bold text-[var(--text-primary)] mb-3 uppercase text-xs tracking-wider">Timelines & Deadlines</h3>
+                          <div className="space-y-3">
+                            {caseData.extractedFields.timelines.map((field, idx) => (
+                              <ExtractedField
+                                key={idx}
+                                field={field}
+                                onUpdate={(updated) => handleUpdateField("timelines", idx, updated)}
+                                onHighlightSource={() => setHighlightedSource(field.sourceRef)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "Action Plan" && caseData.actionPlan && (
+                <div className="space-y-4">
+                  <div className="bg-[var(--accent-blue-light)] rounded-lg p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--accent-navy)] mb-2">Action Type</p>
+                    <p className="font-semibold text-[var(--accent-navy)]">{caseData.actionPlan.actionType}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">Priority</p>
+                    <Badge variant={caseData.actionPlan.priority.toLowerCase() as any}>
+                      {caseData.actionPlan.priority}
+                    </Badge>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">Deadline</p>
+                    <p className="text-[var(--text-primary)] font-semibold">{caseData.actionPlan.deadline}</p>
+                  </div>
+
+                  <div className="border-t border-[var(--border)] pt-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">Action Steps</p>
+                    <ol className="space-y-2 list-decimal list-inside">
+                      {caseData.actionPlan.steps.map((step) => (
+                        <li key={step.id} className="text-sm text-[var(--text-primary)]">
+                          {step.description}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "AI Reasoning" && caseData.actionPlan && (
+                <div className="space-y-4">
+                  <div className="bg-[var(--accent-blue-light)] rounded-lg p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--accent-navy)] mb-2">AI Reasoning</p>
+                    <p className="text-sm text-[var(--accent-navy)] leading-relaxed">{caseData.actionPlan.aiReasoning}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">Appeal Recommendation</p>
+                    <div className={`px-3 py-2 rounded text-sm font-bold text-center ${
+                      caseData.actionPlan.appealRecommendation === "RECOMMENDED"
+                        ? "bg-[var(--status-verified-bg)] text-[var(--status-verified)]"
+                        : "bg-[var(--critical-light)] text-[var(--critical)]"
+                    }`}>
+                      {caseData.actionPlan.appealRecommendation.replace("_", " ")}
+                    </div>
+                  </div>
+
+                  {caseData.actionPlan.reviewerNotes && (
+                    <div className="border-t border-[var(--border)] pt-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">Reviewer Notes</p>
+                      <p className="text-sm text-[var(--text-primary)]">{caseData.actionPlan.reviewerNotes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

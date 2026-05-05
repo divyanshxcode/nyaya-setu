@@ -13,7 +13,11 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Scale
+  Scale,
+  Clock,
+  CheckCircle2,
+  Book,
+  User
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -28,9 +32,16 @@ const NAV_ITEMS = [
     { label: "Verification Queue", href: "/review", icon: ClipboardCheck, badge: 34 },
     { label: "Action Plans", href: "/action-plans", icon: ListChecks }
   ]},
-  { section: "REPORTS", items: [
-    { label: "Departments", href: "/departments", icon: Building2 },
-    { label: "Analytics", href: "/analytics", icon: BarChart3 }
+  { section: "TRACKING", items: [
+    { label: "Appeal Deadlines", href: "/appeal-deadlines", icon: Clock },
+    { label: "Compliance Tracker", href: "/compliance-tracker", icon: CheckCircle2 }
+  ]},
+  { section: "ORGANIZATION", items: [
+    { label: "Departments", href: "/departments", icon: Building2 }
+  ]},
+  { section: "ADMIN & AUDIT", items: [
+    { label: "Admin Dashboard", href: "/admin", icon: BarChart3 },
+    { label: "Audit Trail", href: "/audit-trail", icon: Book }
   ]}
 ];
 
@@ -103,6 +114,21 @@ export function Sidebar() {
       </div>
 
       <div className="mt-auto p-4 border-t border-[var(--border)] flex flex-col gap-4">
+        <Link 
+          href="/profile"
+          className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-md text-[var(--text-secondary)] hover:bg-[var(--surface-raised)] transition-colors",
+            pathname === "/profile" && "bg-[var(--accent-blue-light)] text-[var(--accent-navy)] font-semibold",
+            collapsed && "justify-center px-0"
+          )}
+          title={collapsed ? "Profile" : undefined}
+        >
+          <User className="w-5 h-5 shrink-0" />
+          <span className={cn("text-sm whitespace-nowrap transition-opacity", collapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
+            Profile
+          </span>
+        </Link>
+        
         <Link 
           href="/settings"
           className={cn(
