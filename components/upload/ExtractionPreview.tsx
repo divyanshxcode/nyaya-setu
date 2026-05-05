@@ -1,223 +1,104 @@
-"use client";
+'use client';
 
-import { FileText, CheckCircle2, ChevronDown, ChevronRight, Edit2, TrendingUp, AlertTriangle } from "lucide-react";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { mockCases } from "@/lib/mockData";
-import { Badge } from "@/components/ui/Badge";
-import Link from "next/link";
+import { cn } from '@/lib/utils';
+import { Check, Loader2 } from 'lucide-react';
+import type { ExtractionField } from '@/lib/ai-extractor';
 
-interface ConfidenceBadgeProps {
-  score: number;
+interface ExtractionPreviewProps {
+  fields: ExtractionField[];
+  isExtracting: boolean;
+  overallConfidence?: number;
 }
 
-function ConfidenceBadge({ score }: ConfidenceBadgeProps) {
-  if (score >= 90) {
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 border border-green-200"><TrendingUp className="w-3 h-3" /> {score}%</span>;
-  }
-  if (score >= 70) {
-    return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200"><TrendingUp className="w-3 h-3" /> {score}%</span>;
-  }
-  return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200"><AlertTriangle className="w-3 h-3" /> {score}%</span>;
-}
-
-export function ExtractionPreview() {
-  const [expandedSection, setExpandedSection] = useState<string | null>("CASE_DETAILS");
-  const caseData = mockCases[0]; // Use the first mock case for preview
-
-  const toggleSection = (section: string) => {
-    setExpandedSection(prev => prev === section ? null : section);
-  };
-
+export function ExtractionPreview({ fields, isExtracting, overallConfidence }: ExtractionPreviewProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-12rem)] animate-fade-in-up">
-      {/* LEFT: PDF Viewer Simulation */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl flex flex-col overflow-hidden shadow-sm">
-        <div className="bg-[var(--surface-raised)] border-b border-[var(--border)] p-3 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[var(--text-muted)]" />
-            <span className="text-sm font-medium text-[var(--text-primary)]">judgment_4521_2024.pdf</span>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
-            <span>Page 3 of 47</span>
-            <div className="flex gap-2">
-              <button className="hover:text-[var(--text-primary)]">-</button>
-              <span>100%</span>
-              <button className="hover:text-[var(--text-primary)]">+</button>
+    <div className="space-y-6">
+      {/* AI Animation */}
+      {isExtracting && (
+        <div className="flex items-center gap-3 p-4 bg-saffron-light rounded-lg">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-saffron/20 animate-ping absolute" />
+            <div className="w-10 h-10 rounded-full bg-saffron flex items-center justify-center relative">
+              <Loader2 className="h-5 w-5 text-white animate-spin" />
             </div>
+          </div>
+          <div>
+            <p className="font-medium text-navy">AI is analyzing judgment...</p>
+            <p className="text-sm text-muted-foreground">Extracting legal information</p>
           </div>
         </div>
-        <div className="flex-1 bg-gray-200 p-8 overflow-y-auto flex justify-center custom-scrollbar">
-          {/* Simulated PDF Page */}
-          <div className="bg-white shadow-md w-full max-w-[600px] h-max p-12 flex flex-col gap-6 text-sm leading-relaxed text-gray-800 font-serif">
-            <h1 className="text-center font-bold text-lg mb-4">IN THE HIGH COURT OF KARNATAKA AT BENGALURU</h1>
-            
-            <p>DATED THIS THE 15TH DAY OF MARCH 2025</p>
-            
-            <p>BEFORE</p>
-            <p className="bg-yellow-200 cursor-pointer relative group">
-              <span className="absolute -left-6 top-0 text-[10px] bg-yellow-400 text-yellow-900 px-1 rounded font-sans font-bold">1</span>
-              THE HON'BLE MR. JUSTICE A.K. SHARMA
-            </p>
-            
-            <div className="flex justify-between my-4">
-              <div>
-                <p>BETWEEN:</p>
-                <p className="bg-yellow-200 cursor-pointer relative mt-1 group">
-                  <span className="absolute -left-6 top-0 text-[10px] bg-yellow-400 text-yellow-900 px-1 rounded font-sans font-bold">2</span>
-                  State of Karnataka,<br/>Rep by its Secretary,<br/>Public Works Department.
-                </p>
+      )}
+
+      {/* Extracted fields */}
+      <div className="space-y-3">
+        {fields.map((field, index) => (
+          <div
+            key={field.fieldName}
+            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg animate-fade-in"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-jade flex items-center justify-center">
+                <Check className="h-3 w-3 text-white" />
               </div>
-              <div className="text-right">
-                <p>... PETITIONER</p>
+              <div>
+                <span className="text-sm text-muted-foreground">{field.fieldName}:</span>
+                <span className="ml-2 text-sm font-medium">{field.value}</span>
               </div>
             </div>
-
-            <div className="flex justify-between my-4">
-              <div>
-                <p>AND:</p>
-                <p className="bg-yellow-200 cursor-pointer relative mt-1 group">
-                  <span className="absolute -left-6 top-0 text-[10px] bg-yellow-400 text-yellow-900 px-1 rounded font-sans font-bold">3</span>
-                  M/s Apex Constructions Ltd,<br/>No 45, Industrial Area.
-                </p>
+            <div className="flex items-center gap-2">
+              <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-full',
+                    field.confidenceScore >= 90
+                      ? 'bg-jade'
+                      : field.confidenceScore >= 75
+                      ? 'bg-amber'
+                      : 'bg-crimson'
+                  )}
+                  style={{ width: `${field.confidenceScore}%` }}
+                />
               </div>
-              <div className="text-right">
-                <p>... RESPONDENT</p>
-              </div>
+              <span className="text-xs text-muted-foreground w-10">
+                {field.confidenceScore}%
+              </span>
             </div>
-
-            <p className="text-center font-bold mt-8">ORDER</p>
-
-            <p>1. The present writ petition is filed challenging the impugned order...</p>
-            
-            <p className="bg-yellow-200 cursor-pointer relative group p-1">
-              <span className="absolute -left-6 top-1 text-[10px] bg-yellow-400 text-yellow-900 px-1 rounded font-sans font-bold">4</span>
-              2. <span className="font-bold">The respondent shall submit the revised compliance report reflecting the recent ecological survey.</span> Furthermore, <span className="font-bold">the concerned department must disburse the withheld payments within 4 weeks.</span>
-            </p>
-
-            <p className="bg-yellow-200 cursor-pointer relative group p-1 mt-4">
-              <span className="absolute -left-6 top-1 text-[10px] bg-yellow-400 text-yellow-900 px-1 rounded font-sans font-bold">5</span>
-              3. The petitioner is directed to ensure <span className="font-bold">compliance by 12 April 2025</span>. Any appeal against this order must be filed within the statutory limitation period of 90 days, expiring on <span className="font-bold">13 June 2025</span>.
-            </p>
           </div>
-        </div>
+        ))}
       </div>
 
-      {/* RIGHT: Extracted Data */}
-      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl flex flex-col shadow-sm">
-        <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--surface-raised)] rounded-t-xl">
-          <h2 className="font-semibold text-[var(--text-primary)]">Extracted Data</h2>
-          <Badge variant="success">Extraction Complete</Badge>
+      {/* Overall confidence gauge */}
+      {overallConfidence !== undefined && !isExtracting && (
+        <div className="flex flex-col items-center p-6 bg-card border border-border rounded-xl">
+          <svg viewBox="0 0 100 60" className="w-48 h-28">
+            {/* Background arc */}
+            <path
+              d="M 10 50 A 40 40 0 0 1 90 50"
+              fill="none"
+              stroke="#E2E8F0"
+              strokeWidth="8"
+              strokeLinecap="round"
+            />
+            {/* Progress arc */}
+            <path
+              d="M 10 50 A 40 40 0 0 1 90 50"
+              fill="none"
+              stroke={overallConfidence >= 85 ? '#1A7A4A' : overallConfidence >= 70 ? '#D4891A' : '#C0392B'}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray="126"
+              strokeDashoffset={126 - (overallConfidence / 100) * 126}
+              className="animate-gauge"
+            />
+            {/* Center text */}
+            <text x="50" y="48" textAnchor="middle" className="text-2xl font-bold fill-foreground">
+              {overallConfidence}%
+            </text>
+          </svg>
+          <p className="text-sm text-muted-foreground mt-2">Overall Extraction Confidence</p>
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-          
-          {/* SECTION: CASE DETAILS */}
-          <div className="mb-4 border border-[var(--border)] rounded-lg overflow-hidden">
-            <button 
-              className="w-full p-3 bg-[var(--surface-raised)] flex justify-between items-center hover:bg-gray-100 transition-colors"
-              onClick={() => toggleSection("CASE_DETAILS")}
-            >
-              <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Case Details</span>
-              {expandedSection === "CASE_DETAILS" ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
-            </button>
-            
-            {expandedSection === "CASE_DETAILS" && (
-              <div className="p-3 bg-white divide-y divide-[var(--border)]">
-                {caseData.extractedFields?.caseInformation.map((field, idx) => (
-                  <div key={idx} className="py-3 group first:pt-0 last:pb-0">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{field.label}</span>
-                      <div className="flex items-center gap-2">
-                        <ConfidenceBadge score={field.confidence} />
-                        <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-[var(--text-muted)] hover:text-[var(--accent-blue)]">
-                          <Edit2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">{field.value}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* SECTION: KEY DIRECTIONS */}
-          <div className="mb-4 border border-[var(--border)] rounded-lg overflow-hidden">
-            <button 
-              className="w-full p-3 bg-[var(--surface-raised)] flex justify-between items-center hover:bg-gray-100 transition-colors"
-              onClick={() => toggleSection("KEY_DIRECTIONS")}
-            >
-              <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Key Directions / Orders</span>
-              {expandedSection === "KEY_DIRECTIONS" ? <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronRight className="w-4 h-4 text-[var(--text-muted)]" />}
-            </button>
-            
-            {expandedSection === "KEY_DIRECTIONS" && (
-              <div className="p-3 bg-white divide-y divide-[var(--border)]">
-                {caseData.extractedFields?.keyDirections.map((field, idx) => (
-                  <div key={idx} className="py-3 group first:pt-0 last:pb-0">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider">{field.label}</span>
-                      <div className="flex items-center gap-2">
-                        <ConfidenceBadge score={field.confidence} />
-                      </div>
-                    </div>
-                    <p className="text-sm text-[var(--text-primary)]">{field.value}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* SECTION: AI ACTION PLAN */}
-          <div className="border border-[var(--accent-navy)] rounded-lg overflow-hidden">
-            <button 
-              className="w-full p-3 bg-[var(--accent-blue-light)] flex justify-between items-center hover:bg-[#e0efff] transition-colors"
-              onClick={() => toggleSection("ACTION_PLAN")}
-            >
-              <span className="text-xs font-bold text-[var(--accent-navy)] uppercase tracking-wider">AI Action Plan (Draft)</span>
-              {expandedSection === "ACTION_PLAN" ? <ChevronDown className="w-4 h-4 text-[var(--accent-navy)]" /> : <ChevronRight className="w-4 h-4 text-[var(--accent-navy)]" />}
-            </button>
-            
-            {expandedSection === "ACTION_PLAN" && (
-              <div className="p-4 bg-white">
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <span className="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">Required Action</span>
-                    <Badge variant="medium">{caseData.actionPlan?.actionType}</Badge>
-                  </div>
-                  <div>
-                    <span className="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">Priority</span>
-                    <Badge variant="high">{caseData.actionPlan?.priority}</Badge>
-                  </div>
-                </div>
-                
-                <div className="mb-4">
-                  <span className="block text-xs text-[var(--text-muted)] uppercase tracking-wider mb-2">Suggested Steps</span>
-                  <ul className="space-y-2">
-                    {caseData.actionPlan?.steps.map((step, idx) => (
-                      <li key={step.id} className="text-sm text-[var(--text-primary)] flex gap-2">
-                        <span className="font-mono text-[var(--text-muted)]">{idx + 1}.</span>
-                        {step.description}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-          </div>
-
-        </div>
-        
-        <div className="p-4 border-t border-[var(--border)] bg-[var(--surface-raised)]">
-          <Link href="/review">
-            <button className="w-full bg-[var(--accent-navy)] text-white py-3 rounded-lg font-semibold hover:bg-[#152a45] transition-colors shadow-sm flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-5 h-5" />
-              Submit to Verification Queue
-            </button>
-          </Link>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

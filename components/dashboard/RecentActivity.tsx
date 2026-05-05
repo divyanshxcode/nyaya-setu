@@ -1,64 +1,67 @@
-import { Upload, CheckCircle2, XCircle, Pencil, AlertOctagon } from "lucide-react";
-import { mockActivities } from "@/lib/mockData";
-import { formatDate } from "@/lib/utils";
+'use client';
 
-export function RecentActivity() {
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "UPLOAD": return <Upload className="w-4 h-4 text-[var(--info)]" />;
-      case "VERIFIED": return <CheckCircle2 className="w-4 h-4 text-[var(--status-verified)]" />;
-      case "REJECTED": return <XCircle className="w-4 h-4 text-[var(--critical)]" />;
-      case "EDITED": return <Pencil className="w-4 h-4 text-[var(--status-review)]" />;
-      case "ESCALATED": return <AlertOctagon className="w-4 h-4 text-[var(--warning)]" />;
-      default: return <Upload className="w-4 h-4 text-[var(--text-muted)]" />;
-    }
-  };
+import { cn } from '@/lib/utils';
+import type { ActivityItem } from '@/types';
+import { CheckCircle, XCircle, Upload, AlertTriangle, PlayCircle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
-  const getBg = (type: string) => {
-    switch (type) {
-      case "UPLOAD": return "bg-[var(--accent-blue-light)]";
-      case "VERIFIED": return "bg-[var(--status-verified-bg)]";
-      case "REJECTED": return "bg-[var(--status-rejected-bg)]";
-      case "EDITED": return "bg-[var(--status-review-bg)]";
-      case "ESCALATED": return "bg-[var(--status-pending-bg)]";
-      default: return "bg-[var(--surface-raised)]";
-    }
-  };
+interface RecentActivityProps {
+  activities: ActivityItem[];
+  className?: string;
+}
 
+const activityIcons = {
+  approved: { icon: CheckCircle, color: 'text-jade bg-jade-light' },
+  rejected: { icon: XCircle, color: 'text-crimson bg-crimson-light' },
+  uploaded: { icon: Upload, color: 'text-blue-600 bg-blue-50' },
+  deadline_alert: { icon: AlertTriangle, color: 'text-amber bg-saffron-light' },
+  review_started: { icon: PlayCircle, color: 'text-purple-600 bg-purple-50' },
+};
+
+export function RecentActivity({ activities, className }: RecentActivityProps) {
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl flex flex-col h-full">
-      <div className="p-4 border-b border-[var(--border)]">
-        <h2 className="font-semibold text-[var(--text-primary)]">Recent Activity</h2>
-      </div>
-      <div className="p-4 flex-1 overflow-y-auto">
-        <div className="relative border-l border-[var(--border-strong)] ml-3 space-y-6">
-          {mockActivities.map((act) => (
-            <div key={act.id} className="relative pl-6">
-              <div className={`absolute -left-[14px] top-0.5 w-7 h-7 rounded-full flex items-center justify-center border-2 border-[var(--surface)] ${getBg(act.type)}`}>
-                {getIcon(act.type)}
+    <div className={cn('bg-card rounded-xl p-6 shadow-sm border border-border', className)}>
+      <h3 className="font-semibold text-lg mb-4">Recent Activity</h3>
+      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+        {activities.map((activity, index) => {
+          const { icon: Icon, color } = activityIcons[activity.type];
+          
+          return (
+            <div
+              key={activity.id}
+              className="flex items-start gap-3 animate-fade-in"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              {/* User avatar */}
+              <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center text-xs font-semibold text-white shrink-0">
+                {activity.user.initials}
               </div>
-              <div className="flex flex-col">
-                <p className="text-sm font-medium text-[var(--text-primary)]">
-                  {act.description}
+              
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className={cn('p-1 rounded', color)}>
+                    <Icon className="h-3 w-3" />
+                  </div>
+                  <span className="text-sm font-medium truncate">{activity.user.name}</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
+                  {activity.description}
                 </p>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className="text-xs text-[var(--text-muted)]">
-                    by <span className="font-medium text-[var(--text-secondary)]">{act.user}</span>
+                {activity.caseNumber && (
+                  <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                    {activity.caseNumber}
                   </span>
-                  <span className="text-[var(--text-muted)] text-[10px]">•</span>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {formatDate(act.timestamp)}
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <span className="inline-flex text-[11px] font-mono font-medium bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--accent-navy)] px-2 py-0.5 rounded">
-                    {act.caseId}
-                  </span>
-                </div>
+                )}
               </div>
+
+              {/* Timestamp */}
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+              </span>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </div>
   );

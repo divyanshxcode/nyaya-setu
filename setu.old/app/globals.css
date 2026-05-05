@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-navy: var(--accent-navy);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-blue-light: var(--accent-blue-light);
+  
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-verified: var(--status-verified);
+  --color-status-verified-bg: var(--status-verified-bg);
+  --color-status-rejected: var(--status-rejected);
+  --color-status-rejected-bg: var(--status-rejected-bg);
+  --color-status-review: var(--status-review);
+  --color-status-review-bg: var(--status-review-bg);
+  
+  --color-critical: var(--critical);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --font-playfair: var(--font-playfair);
+  --font-dm: var(--font-dm);
+  --font-mono: var(--font-mono);
+
+  --animate-fade-in-up: fadeInUp 0.5s ease-out forwards;
+}
+
+:root {
+  --background: #F8F9FC;
+  --surface: #FFFFFF;
+  --surface-raised: #F1F4F9;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --accent-navy: #1E3A5F;
+  --accent-blue: #2563EB;
+  --accent-blue-light: #EFF6FF;
+  --status-pending: #F59E0B;
+  --status-pending-bg: #FFFBEB;
+  --status-verified: #10B981;
+  --status-verified-bg: #ECFDF5;
+  --status-rejected: #EF4444;
+  --status-rejected-bg: #FEF2F2;
+  --status-review: #8B5CF6;
+  --status-review-bg: #F5F3FF;
+  --critical: #DC2626;
+  --warning: #D97706;
+  --info: #0284C7;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-dm), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Base card transition */
+.card-hover {
+  transition: all 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}

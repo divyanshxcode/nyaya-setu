@@ -1,67 +1,145 @@
-"use client";
+'use client';
 
-import { usePathname } from "next/navigation";
-import { Search, Bell, Calendar, ChevronRight } from "lucide-react";
+import { Bell, Search, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const routeLabels: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/upload': 'Upload Judgment',
+  '/cases': 'All Cases',
+  '/review': 'Review Queue',
+  '/actions': 'Action Plans',
+  '/departments': 'Departments',
+  '/appeals': 'Appeals',
+  '/reports': 'Reports',
+  '/settings': 'Settings',
+};
 
 export function Topbar() {
   const pathname = usePathname();
-  const pathSegments = pathname.split('/').filter(Boolean);
   
-  const today = new Date().toLocaleDateString('en-US', { 
-    weekday: 'short', 
-    month: 'short', 
-    day: 'numeric',
-    year: 'numeric'
-  });
+  const getBreadcrumbs = () => {
+    const paths = pathname.split('/').filter(Boolean);
+    const breadcrumbs: { label: string; href: string }[] = [];
+    
+    let currentPath = '';
+    for (const path of paths) {
+      currentPath += `/${path}`;
+      const label = routeLabels[currentPath] || path.charAt(0).toUpperCase() + path.slice(1);
+      breadcrumbs.push({ label, href: currentPath });
+    }
+    
+    return breadcrumbs;
+  };
+
+  const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="h-16 border-b border-[var(--border)] bg-[var(--surface)] flex items-center justify-between px-6 sticky top-0 z-10 w-full shrink-0">
-      
-      {/* Breadcrumb / Left */}
-      <div className="flex items-center text-sm">
-        <span className="text-[var(--text-muted)]">CCMS</span>
-        {pathSegments.map((segment, index) => (
-          <div key={index} className="flex items-center">
-            <ChevronRight className="w-4 h-4 mx-2 text-[var(--text-muted)]" />
-            <span className={index === pathSegments.length - 1 ? "text-[var(--text-primary)] font-medium capitalize" : "text-[var(--text-muted)] capitalize"}>
-              {segment.replace(/-/g, ' ')}
+    <header className="sticky top-0 z-30 bg-card border-b border-border">
+      <div className="flex items-center justify-between h-16 px-6">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center text-sm">
+          <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+            Home
+          </Link>
+          {breadcrumbs.map((crumb, index) => (
+            <span key={crumb.href} className="flex items-center">
+              <ChevronRight className="h-4 w-4 mx-2 text-muted-foreground/50" />
+              {index === breadcrumbs.length - 1 ? (
+                <span className="font-medium text-foreground">{crumb.label}</span>
+              ) : (
+                <Link href={crumb.href} className="text-muted-foreground hover:text-foreground transition-colors">
+                  {crumb.label}
+                </Link>
+              )}
             </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </nav>
 
-      {/* Global Search / Center */}
-      <div className="flex-1 max-w-xl mx-8">
-        <div className="relative group">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--accent-blue)] transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Search cases, judgments, departments..." 
-            className="w-full bg-[var(--surface-raised)] border border-transparent rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-[var(--accent-blue)] focus:bg-white transition-all placeholder:text-[var(--text-muted)] text-[var(--text-primary)]"
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-            <kbd className="hidden sm:inline-block font-mono text-[10px] text-[var(--text-muted)] bg-[var(--border)] px-1.5 py-0.5 rounded border border-[var(--border-strong)]">⌘K</kbd>
+        {/* Right section */}
+        <div className="flex items-center gap-4">
+          {/* Search */}
+          <div className="relative hidden md:block">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search cases..."
+              className="w-64 pl-9 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-saffron"
+            />
           </div>
+
+          {/* Notifications */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-crimson text-[10px] font-medium text-white flex items-center justify-center">
+                  3
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                <span className="text-sm font-medium">Deadline Alert</span>
+                <span className="text-xs text-muted-foreground">
+                  CWP-1892-2023 is overdue by 15 days
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                <span className="text-sm font-medium">Review Pending</span>
+                <span className="text-xs text-muted-foreground">
+                  4 cases awaiting human verification
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                <span className="text-sm font-medium">New Upload</span>
+                <span className="text-xs text-muted-foreground">
+                  W.P.(C) 7823/2024 processed successfully
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="justify-center text-saffron">
+                View all notifications
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center text-xs font-semibold text-white">
+                  AS
+                </div>
+                <span className="hidden md:inline text-sm font-medium">Dr. Amit Sharma</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/login">Sign out</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-
-      {/* Right Actions */}
-      <div className="flex items-center gap-6">
-        <div className="hidden md:flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-          <Calendar className="w-4 h-4" />
-          <span>{today}</span>
-        </div>
-        
-        <div className="w-px h-6 bg-[var(--border)] hidden md:block"></div>
-        
-        <button className="relative text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-          <Bell className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--critical)] rounded-full text-[10px] text-white flex items-center justify-center font-bold border-2 border-[var(--surface)]">
-            3
-          </span>
-        </button>
-      </div>
-
     </header>
   );
 }

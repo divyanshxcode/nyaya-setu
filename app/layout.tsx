@@ -1,47 +1,60 @@
-import type { Metadata } from "next";
-import { Playfair_Display, DM_Sans, JetBrains_Mono } from "next/font/google";
-import "./globals.css";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Topbar } from "@/components/layout/Topbar";
+import type { Metadata } from 'next'
+import { DM_Sans, Playfair_Display } from 'next/font/google'
+import { Geist_Mono } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/next'
+import './globals.css'
 
-const playfair = Playfair_Display({
+const dmSans = DM_Sans({ 
   subsets: ["latin"],
-  variable: "--font-playfair",
-});
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-dm-sans'
+})
 
-const dmSans = DM_Sans({
+const playfair = Playfair_Display({ 
   subsets: ["latin"],
-  variable: "--font-dm",
-});
+  weight: ['700', '900'],
+  variable: '--font-playfair'
+})
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({ 
   subsets: ["latin"],
-  variable: "--font-mono",
-});
+  variable: '--font-geist-mono'
+})
 
 export const metadata: Metadata = {
-  title: "CCMS - Court Case Monitoring System",
-  description: "Government legal intelligence dashboard for tracking court judgments and converting them into verified action plans.",
-};
+  title: 'Nyaya-Setu | Court Case Monitoring System',
+  description: 'AI-powered judicial decision-support platform for the Government of India',
+  generator: 'v0.app',
+  icons: {
+    icon: [
+      {
+        url: '/icon-light-32x32.png',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/icon-dark-32x32.png',
+        media: '(prefers-color-scheme: dark)',
+      },
+      {
+        url: '/icon.svg',
+        type: 'image/svg+xml',
+      },
+    ],
+    apple: '/apple-icon.png',
+  },
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${playfair.variable} ${dmSans.variable} ${jetbrainsMono.variable} antialiased h-screen overflow-hidden flex bg-[var(--background)]`}
-      >
-        <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-          <Topbar />
-          <main className="flex-1 overflow-y-auto bg-[var(--background)] relative">
-            {children}
-          </main>
-        </div>
+    <html lang="en" className={`${dmSans.variable} ${playfair.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased bg-surface">
+        {children}
+        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
-  );
+  )
 }
