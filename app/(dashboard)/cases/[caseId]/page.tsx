@@ -90,7 +90,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
               Back
             </Button>
           </div>
-          <h1 className="font-serif text-3xl font-bold">{courtCase.caseNumber}</h1>
+          <h1 className="text-3xl font-bold">{courtCase.caseNumber}</h1>
           <p className="text-muted-foreground mt-1">
             {courtCase.courtName} | {courtCase.dateOfOrder}
           </p>
@@ -346,7 +346,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
               <CardContent>
                 <div className="bg-white border border-border rounded-lg p-6 min-h-[500px]">
                   <div className="prose prose-sm max-w-none">
-                    <h3 className="text-center font-serif">
+                    <h3 className="text-center">
                       IN THE HIGH COURT OF{' '}
                       {highlightedField === 'Court Name' ? (
                         <mark className="bg-yellow-200">{courtCase.courtName.toUpperCase()}</mark>

@@ -440,7 +440,7 @@ export default function ReviewFormPage({ params }: ReviewFormPageProps) {
           <CardContent>
             <div className="bg-white border border-border rounded-lg p-6 min-h-[600px] overflow-y-auto">
               <div className="prose prose-sm max-w-none">
-                <h3 className="text-center font-serif">
+                <h3 className="text-center">
                   IN THE HIGH COURT OF{' '}
                   {highlightedField === 'courtName' ? (
                     <mark className="bg-yellow-200 animate-pulse">{formData.courtName.toUpperCase()}</mark>

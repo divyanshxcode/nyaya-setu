@@ -444,7 +444,7 @@ export default function UploadPage() {
                     <p className="text-xs text-muted-foreground mb-4">
                       Page 1 of 4
                     </p>
-                    <h3 className="text-center font-serif">
+                    <h3 className="text-center">
                       IN THE HIGH COURT OF DELHI AT NEW DELHI
                     </h3>
                     <p className="text-center">

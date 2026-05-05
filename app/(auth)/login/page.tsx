@@ -97,7 +97,7 @@ export default function LoginPage() {
 
           {/* Logo and tagline */}
           <div className="space-y-4">
-            <h1 className="font-serif text-5xl font-bold text-white tracking-tight">
+            <h1 className="text-5xl font-bold text-white tracking-tight">
               न्याय-Setu
             </h1>
             <p className="text-2xl text-saffron font-medium">Nyaya-Setu</p>
@@ -124,9 +124,9 @@ export default function LoginPage() {
               <div className="w-10 h-10 bg-navy rounded-lg flex items-center justify-center">
                 <Scale className="h-6 w-6 text-white" />
               </div>
-              <span className="font-serif text-2xl font-bold text-navy">न्याय-सेतु</span>
+              <span className="text-2xl font-bold text-navy">न्याय-सेतु</span>
             </div>
-            <CardTitle className="text-2xl font-serif">Welcome Back</CardTitle>
+            <CardTitle className="text-2xl">Welcome Back</CardTitle>
             <CardDescription>
               Sign in to access the Court Case Monitoring System
             </CardDescription>

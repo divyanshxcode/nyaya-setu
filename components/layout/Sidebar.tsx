@@ -94,7 +94,7 @@ export function Sidebar({ className }: SidebarProps) {
               <Scale className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="font-serif text-xl font-bold tracking-tight">
+              <h1 className="text-xl font-bold tracking-tight">
                 न्याय-सेतु
               </h1>
               <p className="text-xs text-white/70">Court Case Monitoring</p>
