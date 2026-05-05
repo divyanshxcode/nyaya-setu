@@ -1,4 +1,5 @@
 import type { ExtractedField } from '@/types';
+import { generateActionPlan, type ActionPlanResponse } from './gemini-action-plan';
 
 export interface ExtractionField {
   fieldName: string;
@@ -43,6 +44,122 @@ export interface ExtractionResult {
   priority: 'high' | 'medium' | 'low';
   deadline: string;
   responsibleDepartment: string;
+}
+
+// Real extraction using Gemini API
+export async function extractWithGemini(
+  judgmentText: string,
+  onFieldExtracted?: (field: ExtractionField, index: number) => void,
+  onComplete?: (result: ExtractionResult) => void
+): Promise<ExtractionResult> {
+  try {
+    const actionPlan = await generateActionPlan(judgmentText);
+    
+    // Extract metadata from the judgment text
+    const extractedFields = extractMetadataFields(judgmentText, actionPlan);
+    
+    // Animate field extraction
+    if (onFieldExtracted) {
+      for (let i = 0; i < extractedFields.length; i++) {
+        await delay(randomBetween(200, 400));
+        onFieldExtracted(extractedFields[i], i);
+      }
+    }
+
+    await delay(500);
+
+    const result: ExtractionResult = {
+      fields: extractedFields,
+      summary: actionPlan.summary,
+      keyDirections: actionPlan.keyDirections,
+      suggestedSteps: actionPlan.actionSteps,
+      overallConfidence: 85,
+      actionType: 'compliance',
+      priority: actionPlan.priority,
+      deadline: actionPlan.deadline,
+      responsibleDepartment: actionPlan.department,
+    };
+
+    if (onComplete) {
+      onComplete(result);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Gemini extraction error:', error);
+    throw error;
+  }
+}
+
+// Helper function to extract metadata from judgment text
+function extractMetadataFields(
+  judgmentText: string,
+  actionPlan: ActionPlanResponse
+): ExtractionField[] {
+  const fields: ExtractionField[] = [];
+
+  // Case Number extraction
+  const caseNumberMatch = judgmentText.match(/(?:W\.P|C\.A|S\.L\.P)\s*(?:\(C\))?\s*No\.?\s*([^\n]+)/i);
+  if (caseNumberMatch) {
+    fields.push({
+      fieldName: 'Case Number',
+      value: caseNumberMatch[1].trim(),
+      confidenceScore: 95,
+    });
+  }
+
+  // Court Name
+  const courtMatch = judgmentText.match(/IN THE\s+([^AT]*?)AT/i);
+  if (courtMatch) {
+    fields.push({
+      fieldName: 'Court Name',
+      value: courtMatch[1].trim(),
+      confidenceScore: 98,
+    });
+  }
+
+  // Judge extraction
+  const judgeMatch = judgmentText.match(/(?:HON.?BLE|HONOURABLE)\s+(?:MR\.?\s+|MRS\.?\s+)?(?:JUSTICE|J\.)\s+([^\n]+)/i);
+  if (judgeMatch) {
+    fields.push({
+      fieldName: 'Judge',
+      value: judgeMatch[1].trim(),
+      confidenceScore: 92,
+    });
+  }
+
+  // Date extraction
+  const dateMatch = judgmentText.match(/Pronounced on:\s*([^\n]+)|(\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)[^,]*,?\s*\d{4})/i);
+  if (dateMatch) {
+    fields.push({
+      fieldName: 'Date of Order',
+      value: (dateMatch[1] || dateMatch[2]).trim(),
+      confidenceScore: 90,
+    });
+  }
+
+  // Department from action plan
+  fields.push({
+    fieldName: 'Department',
+    value: actionPlan.department,
+    confidenceScore: 88,
+  });
+
+  // Deadline
+  fields.push({
+    fieldName: 'Deadline',
+    value: actionPlan.deadline,
+    confidenceScore: 85,
+  });
+
+  // Priority
+  fields.push({
+    fieldName: 'Priority',
+    value: actionPlan.priority.toUpperCase(),
+    confidenceScore: 90,
+  });
+
+  return fields;
 }
 
 export async function simulateExtraction(

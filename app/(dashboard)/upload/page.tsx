@@ -19,9 +19,12 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
-import { simulateOCR, type OcrStage } from '@/lib/ocr-simulator';
-import { simulateExtraction, type ExtractionField, type ExtractionResult } from '@/lib/ai-extractor';
+import { Check, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import type { OcrStage } from '@/lib/ocr-simulator';
+import { simulateOCR } from '@/lib/ocr-simulator';
+import type { ExtractionField, ExtractionResult } from '@/lib/ai-extractor';
+import { extractWithGemini } from '@/lib/ai-extractor';
+import { extractTextFromPDF } from '@/lib/pdf-extractor';
 import { departments } from '@/lib/mock-data';
 
 type Step = 1 | 2 | 3 | 4;
@@ -38,6 +41,7 @@ export default function UploadPage() {
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [file, setFile] = useState<File | null>(null);
   const [autoFetch, setAutoFetch] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form data
   const [caseNumber, setCaseNumber] = useState('');
@@ -58,49 +62,86 @@ export default function UploadPage() {
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
+    setError(null);
   };
 
   const handleClearFile = () => {
     setFile(null);
+    setError(null);
   };
 
   const startOcrProcess = async () => {
-    setCurrentStep(2);
-    
-    await simulateOCR((stage, stages, partialText) => {
-      setOcrStages(stages);
-      setCurrentOcrStage(stage);
-      if (partialText) {
-        setOcrText(partialText);
-      }
-    });
+    if (!file) {
+      setError('Please select a file first');
+      return;
+    }
 
-    setOcrStats({ pageCount: 4, wordCount: 487, confidence: 94 });
-    
-    // Auto-advance after a delay
-    setTimeout(() => startAiExtraction(), 1500);
+    try {
+      setError(null);
+      setCurrentStep(2);
+      
+      // Extract text from PDF
+      const extractedText = await extractTextFromPDF(file, (progress) => {
+        setOcrText(progress.partialText);
+        // Simulate OCR stages for visual feedback
+        const stageNumber = Math.min(progress.stage, 4);
+        const stages: OcrStage[] = [
+          { name: 'PDF Received', status: stageNumber > 0 ? 'completed' : 'pending' },
+          { name: 'Running OCR Engine', status: stageNumber > 1 ? 'completed' : stageNumber === 1 ? 'processing' : 'pending' },
+          { name: 'Text Extraction', status: stageNumber > 2 ? 'completed' : stageNumber === 2 ? 'processing' : 'pending' },
+          { name: 'Layout Analysis', status: stageNumber > 3 ? 'completed' : stageNumber === 3 ? 'processing' : 'pending' },
+          { name: 'Page Segmentation', status: stageNumber > 4 ? 'completed' : 'pending' },
+        ];
+        setOcrStages(stages);
+        setCurrentOcrStage(Math.min(stageNumber, 4));
+      });
+
+      // Calculate stats
+      const wordCount = extractedText.split(/\s+/).length;
+      const pageMatches = extractedText.match(/--- PAGE \d+ ---/g) || [];
+      const pageCount = pageMatches.length;
+
+      setOcrText(extractedText);
+      setOcrStats({ pageCount, wordCount, confidence: 92 });
+      
+      // Auto-advance after a delay
+      setTimeout(() => startAiExtraction(extractedText), 1500);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to extract PDF';
+      setError(errorMessage);
+      setCurrentStep(1);
+    }
   };
 
-  const startAiExtraction = async () => {
-    setCurrentStep(3);
-    setIsExtracting(true);
-    setExtractedFields([]);
+  const startAiExtraction = async (extractedText: string) => {
+    try {
+      setCurrentStep(3);
+      setIsExtracting(true);
+      setExtractedFields([]);
+      setError(null);
 
-    await simulateExtraction(
-      (field) => {
-        setExtractedFields(prev => [...prev, field]);
-      },
-      (result) => {
-        setExtractionResult(result);
-        setIsExtracting(false);
-        // Auto-fill form fields
-        setCaseNumber('WP/2024/00134');
-        setCourtName('Delhi High Court');
-        setDateOfOrder('2024-01-15');
-        setDepartment('pwd');
-        setTimeout(() => setCurrentStep(4), 1500);
-      }
-    );
+      await extractWithGemini(
+        extractedText,
+        (field) => {
+          setExtractedFields(prev => [...prev, field]);
+        },
+        (result) => {
+          setExtractionResult(result);
+          setIsExtracting(false);
+          // Auto-fill form fields from extraction result
+          setCaseNumber(result.fields.find(f => f.fieldName === 'Case Number')?.value || '');
+          setCourtName(result.fields.find(f => f.fieldName === 'Court Name')?.value || '');
+          setDateOfOrder(result.fields.find(f => f.fieldName === 'Date of Order')?.value || '');
+          setDepartment(result.responsibleDepartment.toLowerCase().replace(/\s+/g, '-'));
+          setTimeout(() => setCurrentStep(4), 1500);
+        }
+      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to extract judgment details';
+      setError(errorMessage);
+      setIsExtracting(false);
+      setCurrentStep(2);
+    }
   };
 
   const handleSubmitForReview = () => {
@@ -114,6 +155,17 @@ export default function UploadPage() {
         title="Upload Judgment"
         description="Upload court judgment PDF for AI-powered extraction and analysis"
       />
+
+      {/* Error Alert */}
+      {error && (
+        <div className="flex items-start gap-3 p-4 bg-crimson-light border border-crimson rounded-lg">
+          <AlertCircle className="h-5 w-5 text-crimson shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-navy">Error</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Stepper */}
       <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
