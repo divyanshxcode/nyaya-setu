@@ -24,16 +24,17 @@ import type { OcrStage } from '@/lib/ocr-simulator';
 import { simulateOCR } from '@/lib/ocr-simulator';
 import type { ExtractionField, ExtractionResult } from '@/lib/ai-extractor';
 import { extractWithGemini } from '@/lib/ai-extractor';
-import { extractTextFromPDF } from '@/lib/pdf-extractor';
+import { extractTextFromPDF, extractStructuredDataFromPDF } from '@/lib/pdf-extractor';
+import type { StructuredPDFData } from '@/lib/pdf-extractor';
 import { departments } from '@/lib/mock-data';
 
 type Step = 1 | 2 | 3 | 4;
 
 const steps = [
   { number: 1, title: 'Upload', description: 'Upload judgment PDF' },
-  { number: 2, title: 'OCR Processing', description: 'Extract text from PDF' },
-  { number: 3, title: 'AI Extraction', description: 'Analyze legal content' },
-  { number: 4, title: 'Review & Submit', description: 'Verify and submit' },
+  { number: 2, title: 'Extract & Review', description: 'Review extracted content with PDF preview' },
+  { number: 3, title: 'AI Analysis', description: 'Analyze with corrected data' },
+  { number: 4, title: 'Action Plan', description: 'Review AI action plan' },
 ];
 
 export default function UploadPage() {
@@ -49,11 +50,15 @@ export default function UploadPage() {
   const [dateOfOrder, setDateOfOrder] = useState('');
   const [department, setDepartment] = useState('');
 
-  // OCR state
   const [ocrStages, setOcrStages] = useState<OcrStage[]>([]);
   const [currentOcrStage, setCurrentOcrStage] = useState(0);
   const [ocrText, setOcrText] = useState('');
   const [ocrStats, setOcrStats] = useState<{ pageCount: number; wordCount: number; confidence: number } | null>(null);
+
+  // Extracted fields that can be edited by user
+  const [extractedFieldsForReview, setExtractedFieldsForReview] = useState<ExtractionField[]>([]);
+  const [editableFields, setEditableFields] = useState<Record<string, string>>({});
+  const [structuredPdfData, setStructuredPdfData] = useState<StructuredPDFData | null>(null);
 
   // Extraction state
   const [extractedFields, setExtractedFields] = useState<ExtractionField[]>([]);
@@ -80,32 +85,31 @@ export default function UploadPage() {
       setError(null);
       setCurrentStep(2);
       
-      // Extract text from PDF
-      const extractedText = await extractTextFromPDF(file, (progress) => {
-        setOcrText(progress.partialText);
-        // Simulate OCR stages for visual feedback
-        const stageNumber = Math.min(progress.stage, 4);
-        const stages: OcrStage[] = [
-          { name: 'PDF Received', status: stageNumber > 0 ? 'completed' : 'pending' },
-          { name: 'Running OCR Engine', status: stageNumber > 1 ? 'completed' : stageNumber === 1 ? 'processing' : 'pending' },
-          { name: 'Text Extraction', status: stageNumber > 2 ? 'completed' : stageNumber === 2 ? 'processing' : 'pending' },
-          { name: 'Layout Analysis', status: stageNumber > 3 ? 'completed' : stageNumber === 3 ? 'processing' : 'pending' },
-          { name: 'Page Segmentation', status: stageNumber > 4 ? 'completed' : 'pending' },
-        ];
-        setOcrStages(stages);
-        setCurrentOcrStage(Math.min(stageNumber, 4));
-      });
-
-      // Calculate stats
-      const wordCount = extractedText.split(/\s+/).length;
-      const pageMatches = extractedText.match(/--- PAGE \d+ ---/g) || [];
-      const pageCount = pageMatches.length;
-
-      setOcrText(extractedText);
-      setOcrStats({ pageCount, wordCount, confidence: 92 });
+      // Extract structured data from PDF using Gemini
+      const pdfData = await extractStructuredDataFromPDF(file);
       
-      // Auto-advance after a delay
-      setTimeout(() => startAiExtraction(extractedText), 1500);
+      setOcrText(pdfData.text);
+      setOcrStats({ 
+        pageCount: pdfData.pageCount, 
+        wordCount: pdfData.wordCount, 
+        confidence: pdfData.confidence 
+      });
+      setStructuredPdfData(pdfData);
+      
+      // Pre-fill form fields from structured data
+      if (pdfData.structuredData) {
+        if (pdfData.structuredData.caseNumber) {
+          setCaseNumber(pdfData.structuredData.caseNumber);
+        }
+        if (pdfData.structuredData.courtName) {
+          setCourtName(pdfData.structuredData.courtName);
+        }
+        if (pdfData.structuredData.dateOfOrder) {
+          setDateOfOrder(pdfData.structuredData.dateOfOrder);
+        }
+      }
+      
+      // Stay at step 2 for human review - don't auto-advance
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to extract PDF';
       setError(errorMessage);
@@ -113,15 +117,18 @@ export default function UploadPage() {
     }
   };
 
-  const startAiExtraction = async (extractedText: string) => {
+  const proceedToAiAnalysis = async () => {
     try {
       setCurrentStep(3);
       setIsExtracting(true);
       setExtractedFields([]);
       setError(null);
 
+      // Use corrected text from editableFields or original ocrText
+      const textToAnalyze = ocrText;
+
       await extractWithGemini(
-        extractedText,
+        textToAnalyze,
         (field) => {
           setExtractedFields(prev => [...prev, field]);
         },
@@ -133,7 +140,7 @@ export default function UploadPage() {
           setCourtName(result.fields.find(f => f.fieldName === 'Court Name')?.value || '');
           setDateOfOrder(result.fields.find(f => f.fieldName === 'Date of Order')?.value || '');
           setDepartment(result.responsibleDepartment.toLowerCase().replace(/\s+/g, '-'));
-          setTimeout(() => setCurrentStep(4), 1500);
+          // Don't auto-advance - let user click button to proceed
         }
       );
     } catch (err) {
@@ -316,59 +323,114 @@ export default function UploadPage() {
           </>
         )}
 
-        {/* Step 2: OCR Processing */}
+        {/* Step 2: Extract & Review with PDF Preview */}
         {currentStep === 2 && (
           <>
             <Card>
               <CardHeader>
-                <CardTitle>OCR Processing</CardTitle>
+                <CardTitle>Extracted Content</CardTitle>
                 <CardDescription>
-                  Extracting text from the uploaded PDF
+                  Review extracted text. Make corrections if needed before AI analysis
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <OcrProgressStepper stages={ocrStages} currentStage={currentOcrStage} />
-                
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editableOcrText">Extracted Text (Editable)</Label>
+                  <textarea
+                    id="editableOcrText"
+                    value={ocrText}
+                    onChange={(e) => setOcrText(e.target.value)}
+                    className="w-full p-3 border border-border rounded-lg font-mono text-xs bg-muted/50 focus:outline-none focus:ring-2 focus:ring-navy"
+                    style={{ height: '300px' }}
+                  />
+                </div>
+
                 {ocrStats && (
-                  <div className="mt-6 p-4 bg-jade-light rounded-lg">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-2xl font-bold text-jade">{ocrStats.pageCount}</p>
-                        <p className="text-xs text-muted-foreground">Pages</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-jade">{ocrStats.wordCount}</p>
-                        <p className="text-xs text-muted-foreground">Words</p>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold text-jade">{ocrStats.confidence}%</p>
-                        <p className="text-xs text-muted-foreground">Confidence</p>
-                      </div>
+                  <div className="p-3 bg-jade-light rounded-lg grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-xl font-bold text-jade">{ocrStats.pageCount}</p>
+                      <p className="text-xs text-muted-foreground">Pages</p>
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-jade">{ocrStats.wordCount}</p>
+                      <p className="text-xs text-muted-foreground">Words</p>
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-jade">{ocrStats.confidence}%</p>
+                      <p className="text-xs text-muted-foreground">Confidence</p>
                     </div>
                   </div>
                 )}
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(1)}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button
+                    className="flex-1 bg-navy hover:bg-navy-light"
+                    onClick={proceedToAiAnalysis}
+                  >
+                    Proceed to AI Analysis
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Extracted Text Preview</CardTitle>
+                <CardTitle>PDF Preview</CardTitle>
                 <CardDescription>
-                  Live preview of OCR output
+                  Original judgment document with highlighted sections
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted/50 rounded-lg p-4 h-[400px] overflow-y-auto">
-                  <pre className="text-xs font-mono whitespace-pre-wrap text-muted-foreground">
-                    {ocrText || 'Processing...'}
-                  </pre>
+                <div className="bg-white border border-border rounded-lg p-6 overflow-y-auto" style={{ height: '400px' }}>
+                  <div className="prose prose-sm max-w-none text-xs">
+                    <p className="text-muted-foreground mb-4">
+                      Page 1 of 4
+                    </p>
+                    <h3 className="text-center font-bold">
+                      IN THE HIGH COURT OF DELHI AT NEW DELHI
+                    </h3>
+                    <p className="text-center">
+                      <mark className="bg-yellow-200">W.P.(C) No. 2024/00134</mark>
+                    </p>
+                    <p className="text-center text-sm">
+                      Reserved on: 10th January, 2024<br />
+                      Pronounced on: <mark className="bg-yellow-200">15th January, 2024</mark>
+                    </p>
+                    <p className="text-center text-sm mt-4">
+                      CORAM:<br />
+                      <mark className="bg-yellow-200">HON&apos;BLE MR. JUSTICE R.K. SHARMA</mark>
+                    </p>
+                    <p className="mt-4">
+                      <strong>Petitioner:</strong> <mark className="bg-yellow-200">Rajesh Kumar Singh</mark>
+                    </p>
+                    <p className="text-center">versus</p>
+                    <p>
+                      <strong>Respondent:</strong> <mark className="bg-yellow-200">State of Delhi & Ors.</mark>
+                    </p>
+                    <h4 className="mt-6 font-bold">DIRECTIONS:</h4>
+                    <ol className="text-sm list-decimal list-inside">
+                      <li>
+                        <mark className="bg-yellow-200">
+                          The respondent No. 2 (PWD) is directed to complete the road repair work within 30 days
+                        </mark>
+                      </li>
+                    </ol>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </>
         )}
 
-        {/* Step 3: AI Extraction */}
+        {/* Step 3: AI Analysis */}
         {currentStep === 3 && (
           <>
             <Card>
@@ -434,6 +496,23 @@ export default function UploadPage() {
                         Department: {extractionResult.responsibleDepartment}
                       </p>
                     </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep(2)}
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back
+                      </Button>
+                      <Button
+                        className="flex-1 bg-navy hover:bg-navy-light"
+                        onClick={() => setCurrentStep(4)}
+                      >
+                        Proceed to Action Plan
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
                   </>
                 )}
               </CardContent>
@@ -441,109 +520,142 @@ export default function UploadPage() {
           </>
         )}
 
-        {/* Step 4: Review & Submit */}
+        {/* Step 4: Action Plan Review */}
         {currentStep === 4 && (
           <>
             <Card>
               <CardHeader>
-                <CardTitle>Extracted Fields</CardTitle>
+                <CardTitle>AI Action Plan & Summary</CardTitle>
                 <CardDescription>
-                  Review and edit extracted information before submission
+                  Review the AI-generated action plan and case summary
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="finalCaseNumber">Case Number</Label>
-                  <Input id="finalCaseNumber" defaultValue="WP/2024/00134" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="finalCourt">Court Name</Label>
-                  <Input id="finalCourt" defaultValue="Delhi High Court" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="finalJudge">Judge</Label>
-                  <Input id="finalJudge" defaultValue="Hon'ble Justice R.K. Sharma" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="finalDate">Date of Order</Label>
-                  <Input id="finalDate" type="date" defaultValue="2024-01-15" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="finalPetitioner">Petitioner</Label>
-                  <Input id="finalPetitioner" defaultValue="Rajesh Kumar Singh" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="finalRespondent">Respondent</Label>
-                  <Input id="finalRespondent" defaultValue="State of Delhi & Ors." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="finalDecision">Final Decision</Label>
-                  <Input id="finalDecision" defaultValue="Petition Allowed" />
-                </div>
+                {extractionResult && (
+                  <>
+                    <div className="border-b pb-4">
+                      <h4 className="text-sm font-semibold mb-2">Case Summary</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {extractionResult.summary}
+                      </p>
+                    </div>
+
+                    <div className="border-b pb-4">
+                      <h4 className="text-sm font-semibold mb-3">Key Directions</h4>
+                      <ul className="space-y-2">
+                        {extractionResult.keyDirections.map((direction, index) => (
+                          <li key={index} className="flex items-start gap-3 text-sm">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-jade text-white text-xs font-medium shrink-0">
+                              {index + 1}
+                            </span>
+                            <span className="text-muted-foreground pt-0.5">{direction}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="p-4 bg-jade-light/50 rounded-lg border border-jade/20">
+                      <h4 className="text-sm font-semibold mb-3">Action Items</h4>
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Action Type:</span>
+                          <span className="ml-2 font-medium px-2 py-1 bg-jade text-white rounded text-xs">
+                            {extractionResult.actionType.toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Priority:</span>
+                          <span className="ml-2 font-medium">{extractionResult.priority}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Deadline:</span>
+                          <span className="ml-2 font-medium">{extractionResult.deadline}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Responsible Dept:</span>
+                          <span className="ml-2 font-medium">{extractionResult.responsibleDepartment}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep(2)}
+                      >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back
+                      </Button>
+                      <Button
+                        className="flex-1 bg-jade hover:bg-jade/90"
+                        onClick={handleSubmitForReview}
+                      >
+                        Submit for Human Review
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>PDF Preview</CardTitle>
+                <CardTitle>Extracted Case Details</CardTitle>
                 <CardDescription>
-                  Highlighted sections in the judgment
+                  Information extracted from the judgment
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="bg-white border border-border rounded-lg p-6 h-[400px] overflow-y-auto">
-                  <div className="prose prose-sm max-w-none">
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Page 1 of 4
-                    </p>
-                    <h3 className="text-center">
-                      IN THE HIGH COURT OF DELHI AT NEW DELHI
-                    </h3>
-                    <p className="text-center">
-                      <mark className="bg-yellow-200">W.P.(C) No. 2024/00134</mark>
-                    </p>
-                    <p className="text-center text-sm">
-                      Reserved on: 10th January, 2024<br />
-                      Pronounced on: <mark className="bg-yellow-200">15th January, 2024</mark>
-                    </p>
-                    <p className="text-center text-sm mt-4">
-                      CORAM:<br />
-                      <mark className="bg-yellow-200">HON&apos;BLE MR. JUSTICE R.K. SHARMA</mark>
-                    </p>
-                    <p className="mt-4">
-                      <strong>Petitioner:</strong> <mark className="bg-yellow-200">Rajesh Kumar Singh</mark>
-                    </p>
-                    <p className="text-center">versus</p>
-                    <p>
-                      <strong>Respondent:</strong> <mark className="bg-yellow-200">State of Delhi & Ors.</mark>
-                    </p>
-                    <h4 className="mt-6">DIRECTIONS:</h4>
-                    <ol className="text-sm">
-                      <li>
-                        <mark className="bg-yellow-200">
-                          The respondent No. 2 (PWD) is directed to complete the road repair work within 30 days
-                        </mark>
-                      </li>
-                    </ol>
-                  </div>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Case Number</Label>
+                  <p className="text-sm font-medium">{caseNumber || '-'}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Court Name</Label>
+                  <p className="text-sm font-medium">{courtName || '-'}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Date of Order</Label>
+                  <p className="text-sm font-medium">{dateOfOrder || '-'}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Department</Label>
+                  <p className="text-sm font-medium">{department || '-'}</p>
                 </div>
 
-                <div className="flex gap-3 mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentStep(1)}
-                  >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Edit Before Submitting
-                  </Button>
-                  <Button
-                    className="flex-1 bg-jade hover:bg-jade/90"
-                    onClick={handleSubmitForReview}
-                  >
-                    Submit for Human Review
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
+                {extractionResult && (
+                  <div className="mt-4 pt-4 border-t space-y-3">
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground mb-2">Extracted Fields</h4>
+                      <div className="space-y-2">
+                        {extractionResult.fields.slice(0, 6).map((field) => (
+                          <div key={field.fieldName} className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">{field.fieldName}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={cn(
+                                    'h-full rounded-full',
+                                    field.confidenceScore >= 90
+                                      ? 'bg-jade'
+                                      : field.confidenceScore >= 75
+                                      ? 'bg-amber'
+                                      : 'bg-crimson'
+                                  )}
+                                  style={{ width: `${field.confidenceScore}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground w-8">
+                                {field.confidenceScore}%
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>
