@@ -19,7 +19,7 @@ export async function generateActionPlan(
   onPartialResponse?: (response: Partial<ActionPlanResponse>) => void
 ): Promise<ActionPlanResponse> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
     const systemPrompt = `You are an expert judicial analyst specializing in Indian court judgments and legal compliance.
 Your task is to analyze court judgments and extract actionable information for government departments.

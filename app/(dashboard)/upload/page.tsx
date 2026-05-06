@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { DropZone } from '@/components/upload/DropZone';
 import { OcrProgressStepper } from '@/components/upload/OcrProgressStepper';
 import { ExtractionPreview } from '@/components/upload/ExtractionPreview';
+import { ExtractedDataDisplay } from '@/components/upload/ExtractedDataDisplay';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -324,7 +325,82 @@ export default function UploadPage() {
         )}
 
         {/* Step 2: Extract & Review with PDF Preview */}
-        {currentStep === 2 && (
+        {currentStep === 2 && structuredPdfData && (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Extracted Metadata & Data</CardTitle>
+                <CardDescription>
+                  AI-extracted case information with source highlighting
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ExtractedDataDisplay 
+                  data={structuredPdfData}
+                  sourceText={ocrText}
+                />
+                
+                <div className="flex gap-3 pt-6 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep(1)}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button
+                    className="flex-1 bg-navy hover:bg-navy-light"
+                    onClick={proceedToAiAnalysis}
+                  >
+                    Proceed to Full Analysis
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Raw Extracted Text</CardTitle>
+                <CardDescription>
+                  Review and edit the extracted text if needed
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="editableOcrText">Text (Editable)</Label>
+                  <textarea
+                    id="editableOcrText"
+                    value={ocrText}
+                    onChange={(e) => setOcrText(e.target.value)}
+                    className="w-full p-3 border border-border rounded-lg font-mono text-xs bg-muted/50 focus:outline-none focus:ring-2 focus:ring-navy"
+                    style={{ height: '300px' }}
+                  />
+                </div>
+
+                {ocrStats && (
+                  <div className="p-3 bg-jade-light rounded-lg grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-xl font-bold text-jade">{ocrStats.pageCount}</p>
+                      <p className="text-xs text-muted-foreground">Pages</p>
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-jade">{ocrStats.wordCount}</p>
+                      <p className="text-xs text-muted-foreground">Words</p>
+                    </div>
+                    <div>
+                      <p className="text-xl font-bold text-jade">{ocrStats.confidence}%</p>
+                      <p className="text-xs text-muted-foreground">Confidence</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* Step 2: Extract & Review (Old layout - fallback) */}
+        {currentStep === 2 && !structuredPdfData && (
           <>
             <Card>
               <CardHeader>

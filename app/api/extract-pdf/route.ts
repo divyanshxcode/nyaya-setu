@@ -1,48 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
+import path from 'node:path';
 
-// Mock judgment text for demo (same one we've been using)
-const mockJudgmentText = `IN THE HIGH COURT OF DELHI AT NEW DELHI
+export const runtime = 'nodejs';
 
-W.P.(C) No. 2024/00134
+interface ExtractionResponse {
+  success: boolean;
+  text: string;
+  pageCount: number;
+  wordCount: number;
+  confidence: number;
+  structuredData: {
+    caseNumber?: string;
+    courtName?: string;
+    judge?: string;
+    dateOfOrder?: string;
+    petitioner?: string;
+    respondent?: string;
+    finalDecision?: string;
+    keyDirections?: string[];
+    summary?: string;
+  };
+  error?: string;
+}
 
-Reserved on: 10th January, 2024
-Pronounced on: 15th January, 2024
+// Simple pattern-based structured data extraction
+function extractStructuredData(text: string): ExtractionResponse['structuredData'] {
+  // Pattern-based extraction
+  const caseNumberMatch = text.match(/(?:Case No\.?|C\.?P\.?|W\.?P\.?)\s*[:\-]?\s*(\d+\/?\d+\/?\d*)/i);
+  const courtMatch = text.match(/(?:High Court|Supreme Court|District Court|Court of|Circuit|Session)/i);
+  const dateMatch = text.match(/(\d{1,2}(?:st|nd|rd|th)?\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})/i);
 
-CORAM:
-HON'BLE MR. JUSTICE R.K. SHARMA
+  // Extract judge names (look for "Before" or "Hon'ble" patterns)
+  const judgeMatch = text.match(/(?:Before|Hon'ble|Honorable)\s+(?:Mr\.|Ms\.|Dr\.|Justice)?\s*([A-Z][a-zA-Z\s\.]+)/i);
 
-IN THE MATTER OF:
+  // Extract parties (simple heuristic - often after "vs" or "vs.")
+  const partyMatch = text.match(/([A-Z][A-Za-z\s]+)\s+(?:vs|versus|V\.S\.)\s+([A-Z][A-Za-z\s]+)/i);
 
-Petitioner: Rajesh Kumar Singh
-...Petitioner(s)
+  // Try to find a summary or key decision
+  const orderMatch = text.match(/(?:ORDER|DECISION|HELD|JUDGMENT)[\s\n]+([^\n]{20,200})/i);
 
-versus
+  return {
+    caseNumber: caseNumberMatch ? caseNumberMatch[1] : undefined,
+    courtName: courtMatch ? courtMatch[0] : undefined,
+    judge: judgeMatch ? judgeMatch[1].trim() : undefined,
+    dateOfOrder: dateMatch ? dateMatch[0] : undefined,
+    petitioner: partyMatch ? partyMatch[1].trim() : undefined,
+    respondent: partyMatch ? partyMatch[2].trim() : undefined,
+    finalDecision: orderMatch ? orderMatch[1].trim() : undefined,
+    keyDirections: extractKeyDirections(text),
+    summary: generateSummary(text),
+  };
+}
 
-State of Delhi & Ors.
-...Respondent(s)
+function extractKeyDirections(text: string): string[] {
+  const directions: string[] = [];
+  
+  // Look for numbered items or bullet points
+  const directivePatterns = [
+    /\d+\.\s+([^\n]{10,150})/g,
+    /[•\-]\s+([^\n]{10,150})/g,
+  ];
 
-JUDGMENT
+  for (const pattern of directivePatterns) {
+    let match;
+    const matches: string[] = [];
+    while ((match = pattern.exec(text)) !== null && directions.length < 5) {
+      const text = match[1].trim();
+      if (text.length > 10 && !text.match(/^(The|This|A|An|and)/i)) {
+        matches.push(text);
+      }
+    }
+    if (matches.length > 0) {
+      directions.push(...matches.slice(0, 5 - directions.length));
+      break;
+    }
+  }
 
-1. The present writ petition has been filed seeking a direction to the respondents to complete the road repair work in the petitioner's locality within a stipulated time frame.
+  return directions.length > 0 ? directions : ['Key directions to be extracted from PDF'];
+}
 
-2. The learned counsel for the petitioner submits that despite repeated representations to the concerned authorities, the road in question has remained in a dilapidated condition causing immense hardship to the residents.
+function generateSummary(text: string): string {
+  // Extract first meaningful sentence or paragraph
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
+  const firstSentence = sentences[0]?.trim() || '';
+  
+  // Also look for "HELD" or "ORDER" sections
+  const heldMatch = text.match(/HELD[\s\n]+([^\n]{20,300})/i);
+  if (heldMatch) {
+    return heldMatch[1].trim().substring(0, 200);
+  }
 
-3. The learned standing counsel for the respondent-State submits that due to budgetary constraints, the repair work could not be taken up earlier. However, necessary funds have now been allocated and the work shall be completed within 30 days.
-
-4. Having heard the learned counsel for the parties and perused the material on record, this Court is of the view that the respondent authorities must complete the road repair work within 30 days from the date of this order.
-
-DIRECTIONS:
-
-i) The respondent No. 2 (PWD) is directed to complete the road repair work within 30 days from today.
-
-ii) The respondent shall submit a compliance report along with photographic evidence within 35 days.
-
-iii) The respondent shall also ensure proper drainage system installation in the said locality.
-
-5. The writ petition is disposed of in the above terms. No costs.
-
-R.K. SHARMA, J
-January 15, 2024`;
+  return firstSentence.substring(0, 200) || 'Judgment document extracted from PDF.';
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,36 +100,81 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: 'No file provided', success: false },
         { status: 400 }
       );
     }
 
-    // Check if file is PDF
     if (file.type !== 'application/pdf') {
       return NextResponse.json(
-        { error: 'Please upload a PDF file' },
+        { error: 'Please upload a PDF file', success: false },
         { status: 400 }
       );
     }
 
-    // For demo: return mock extracted text
-    // In production, you would use a proper PDF extraction library here
-    const extractedText = mockJudgmentText;
-    const pageCount = 4;
-    const wordCount = extractedText.split(/\s+/).length;
+    // Convert File to Buffer for pdf-parse.
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    return NextResponse.json({
+    // Try to parse PDF using pdf-parse
+    let extractedText = '';
+    let pageCount = 1;
+
+    try {
+      const { PDFParse } = await import('pdf-parse');
+      PDFParse.setWorker(
+        path.join(process.cwd(), 'node_modules/pdf-parse/dist/worker/pdf.worker.mjs')
+      );
+      const parser = new PDFParse({ data: buffer });
+
+      try {
+        const pdfData = await parser.getText();
+        extractedText = pdfData.text?.trim() || '';
+        pageCount = pdfData.total || 1;
+      } finally {
+        await parser.destroy();
+      }
+    } catch (pdfError) {
+      console.error('pdf-parse extraction failed:', pdfError);
+      return NextResponse.json(
+        {
+          error: 'Failed to extract text from this PDF. If it is scanned or image-only, OCR is required.',
+          success: false,
+        },
+        { status: 422 }
+      );
+    }
+
+    if (!extractedText) {
+      return NextResponse.json(
+        {
+          error: 'No selectable text was found in this PDF. If it is scanned or image-only, OCR is required.',
+          success: false,
+        },
+        { status: 422 }
+      );
+    }
+
+    const wordCount = extractedText.split(/\s+/).filter((w: string) => w.length > 0).length;
+
+    // Extract structured data using pattern matching
+    const structuredData = extractStructuredData(extractedText);
+
+    const response: ExtractionResponse = {
       success: true,
       text: extractedText,
       pageCount,
       wordCount,
-      confidence: 92,
-    });
+      confidence: 85, // Slightly lower than AI for local extraction
+      structuredData,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('PDF extraction error:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Failed to extract PDF';
     return NextResponse.json(
-      { error: 'Failed to extract PDF text' },
+      { error: errorMessage, success: false },
       { status: 500 }
     );
   }
