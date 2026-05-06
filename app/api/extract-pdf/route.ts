@@ -121,9 +121,17 @@ export async function POST(request: NextRequest) {
 
     try {
       const { PDFParse } = await import('pdf-parse');
-      PDFParse.setWorker(
-        path.join(process.cwd(), 'node_modules/pdf-parse/dist/worker/pdf.worker.mjs')
-      );
+      
+      // Try to set worker path, but don't fail if it can't (may be different in deployment)
+      try {
+        PDFParse.setWorker(
+          path.join(process.cwd(), 'node_modules/pdf-parse/dist/worker/pdf.worker.mjs')
+        );
+      } catch (workerError) {
+        console.warn('Warning: Could not set PDF worker path, will use default:', workerError);
+        // Continue without setting worker - it may still work with default configuration
+      }
+      
       const parser = new PDFParse({ data: buffer });
 
       try {

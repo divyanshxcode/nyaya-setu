@@ -29,14 +29,36 @@ async function extractViaApi(
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch('/api/extract-pdf', {
+  // Try primary endpoint first
+  try {
+    const response = await fetch('/api/extract-pdf', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (response.ok) {
+      const data: StructuredPDFData = await response.json();
+      if (data && typeof data.text === 'string') {
+        return data;
+      }
+    }
+  } catch (error) {
+    console.warn('Primary PDF extraction failed, will try Gemini fallback:', error);
+  }
+
+  // Fallback to Gemini endpoint if primary fails
+  console.log('Attempting Gemini-based extraction as fallback...');
+  const formData2 = new FormData();
+  formData2.append('file', file);
+
+  const response = await fetch('/api/extract-pdf-gemini', {
     method: 'POST',
-    body: formData,
+    body: formData2,
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.error || 'Failed to extract PDF');
+    throw new Error(errorData?.error || 'Failed to extract PDF with both methods');
   }
 
   const data: StructuredPDFData = await response.json();
