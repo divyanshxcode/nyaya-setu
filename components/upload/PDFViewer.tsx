@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { AlertCircle, ExternalLink, FileText } from 'lucide-react';
 import type { ExtractedFieldWithMeta } from '@/types';
 
 interface PDFViewerProps {
@@ -13,59 +12,28 @@ interface PDFViewerProps {
   fieldsWithMeta?: ExtractedFieldWithMeta[];
 }
 
-export function PDFViewer({ file, highlightedField, fieldsWithMeta }: PDFViewerProps) {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+export default function PDFViewer({ file }: PDFViewerProps) {
   const [error, setError] = useState<string | null>(null);
-  const [pdfReady, setPdfReady] = useState(false);
-  const documentRef = useRef<HTMLDivElement>(null);
+  const objectUrl = useMemo(() => {
+    if (!file) return null;
+    return URL.createObjectURL(file);
+  }, [file]);
 
   useEffect(() => {
-    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-    setPdfReady(true);
-  }, []);
-
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    console.log('✅ PDF loaded successfully, pages:', numPages);
-    setNumPages(numPages);
-    setCurrentPage(prev => Math.min(prev, numPages));
     setError(null);
-  };
 
-  const onDocumentLoadError = (error: Error) => {
-    console.error('❌ Error loading PDF:', error);
-    setError('Failed to load PDF. Please ensure it is a valid PDF file.');
-  };
-
-  const goToPrevPage = () => {
-    setCurrentPage(prev => Math.max(prev - 1, 1));
-  };
-
-  const goToNextPage = () => {
-    setCurrentPage(prev => (numPages ? Math.min(prev + 1, numPages) : prev));
-  };
-
-  useEffect(() => {
-    // Scroll to highlighted content if available
-    if (highlightedField && documentRef.current && fieldsWithMeta) {
-      const field = fieldsWithMeta.find(f => f.fieldKey === highlightedField);
-      if (field?.sourcePageNumber) {
-        setCurrentPage(field.sourcePageNumber);
-        // Small delay to ensure page is rendered before scrolling
-        setTimeout(() => {
-          if (documentRef.current) {
-            documentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 100);
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
       }
-    }
-  }, [highlightedField, fieldsWithMeta]);
+    };
+  }, [objectUrl]);
 
   if (!file) {
     return (
       <Card className="bg-slate-50">
         <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-[400px]">
+          <div className="flex h-[400px] items-center justify-center">
             <p className="text-muted-foreground">No PDF file selected</p>
           </div>
         </CardContent>
@@ -73,11 +41,13 @@ export function PDFViewer({ file, highlightedField, fieldsWithMeta }: PDFViewerP
     );
   }
 
-  if (!pdfReady) {
+  if (!objectUrl) {
     return (
       <Card>
-        <CardContent className="pt-6 h-[400px] flex items-center justify-center">
-          <p className="text-muted-foreground">Initializing PDF viewer...</p>
+        <CardContent className="pt-6">
+          <div className="flex h-[400px] items-center justify-center text-muted-foreground">
+            Preparing PDF preview...
+          </div>
         </CardContent>
       </Card>
     );
@@ -85,61 +55,38 @@ export function PDFViewer({ file, highlightedField, fieldsWithMeta }: PDFViewerP
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>PDF Preview with Source Highlights</CardTitle>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle>PDF Preview</CardTitle>
+          <Button asChild size="sm" variant="outline">
+            <a href={objectUrl} target="_blank" rel="noreferrer">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Open
+            </a>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700 flex items-center gap-2">
+          <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             <AlertCircle className="h-4 w-4" />
             {error}
           </div>
         )}
 
-        <div
-          ref={documentRef}
-          className="border rounded-lg bg-white overflow-auto"
-          style={{ maxHeight: '500px' }}
-        >
-          <Document
-            file={file}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
-            loading={<div className="p-8 text-center text-muted-foreground">Loading PDF...</div>}
-          >
-            <Page
-              pageNumber={currentPage}
-              scale={1.2}
-              renderTextLayer={true}
-              renderAnnotationLayer={false}
-            />
-          </Document>
+        <div className="overflow-hidden rounded-lg border bg-slate-50">
+          <iframe
+            key={objectUrl}
+            src={objectUrl}
+            title={file.name}
+            className="h-[720px] w-full bg-white"
+            onError={() => setError('Failed to load PDF preview in the browser frame.')}
+          />
         </div>
 
-        <div className="flex items-center justify-between">
-          <Button
-            onClick={goToPrevPage}
-            disabled={currentPage <= 1}
-            variant="outline"
-            size="sm"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-
-          <span className="text-sm text-muted-foreground">
-            Page {currentPage} of {numPages || '—'}
-          </span>
-
-          <Button
-            onClick={goToNextPage}
-            disabled={!numPages || currentPage >= numPages}
-            variant="outline"
-            size="sm"
-          >
-            Next
-            <ChevronRight className="h-4 w-4 ml-2" />
-          </Button>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <FileText className="h-4 w-4" />
+          {file.name}
         </div>
       </CardContent>
     </Card>

@@ -1,19 +1,13 @@
 import type { Metadata } from 'next'
-import { DM_Sans, Playfair_Display } from 'next/font/google'
+import { Roboto } from 'next/font/google'
 import { Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const dmSans = DM_Sans({ 
+const roboto = Roboto({
   subsets: ["latin"],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-dm-sans'
-})
-
-const playfair = Playfair_Display({ 
-  subsets: ["latin"],
-  weight: ['700', '900'],
-  variable: '--font-playfair'
+  variable: '--font-roboto'
 })
 
 const geistMono = Geist_Mono({ 
@@ -50,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${playfair.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${roboto.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased bg-surface">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

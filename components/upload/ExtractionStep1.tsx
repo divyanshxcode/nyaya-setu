@@ -3,7 +3,6 @@
 import React from 'react';
 import { useExtraction } from '@/lib/extraction-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 import { DropZone } from './DropZone';
 
@@ -11,15 +10,15 @@ export function ExtractionStep1() {
   const { extraction, isLoading, setFile, clearFile } = useExtraction();
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-slate-200 shadow-sm">
+      <CardHeader className="pb-4">
         <CardTitle>Upload Court Order PDF</CardTitle>
         <CardDescription>
           Select a court judgment or order PDF for processing. The system will extract case details and
           prepare them for human review.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         <DropZone
           onFileSelect={setFile}
           file={extraction?.pdfFile || null}
@@ -27,32 +26,32 @@ export function ExtractionStep1() {
         />
 
         {isLoading && extraction?.pdfFile && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="text-sm text-blue-900 flex items-center gap-2">
-              <span className="inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <span className="inline-block h-4 w-4 rounded-full border-2 border-slate-600 border-t-transparent animate-spin" />
               Processing PDF and extracting case details...
             </p>
           </div>
         )}
 
         {!isLoading && extraction?.pdfFile && extraction?.extractedDetails && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-sm text-green-900">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+            <p className="text-sm text-emerald-900">
               ✓ PDF processed successfully. Click Next to review extracted details.
             </p>
           </div>
         )}
 
         {!isLoading && extraction?.pdfFile && !extraction?.extractedDetails && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm text-slate-800">
               ✓ PDF ready for processing. Click Next to proceed with extraction.
             </p>
           </div>
         )}
 
         {!extraction?.pdfFile && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-2">
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-amber-900">
               <p className="font-medium mb-1">No file selected</p>
@@ -61,8 +60,8 @@ export function ExtractionStep1() {
           </div>
         )}
 
-        <div className="bg-slate-50 p-4 rounded-lg">
-          <h4 className="font-semibold text-sm mb-3">What happens next?</h4>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <h4 className="mb-2 text-sm font-semibold">What happens next?</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>✓ Raw text extraction from PDF using PDF.js</li>
             <li>✓ Gemini AI processes text for structured extraction</li>

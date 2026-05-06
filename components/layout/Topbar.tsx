@@ -46,8 +46,8 @@ export function Topbar() {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="sticky top-0 z-30 bg-card border-b border-border">
-      <div className="flex items-center justify-between h-16 px-6">
+    <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur">
+      <div className="flex h-14 items-center justify-between px-5">
         {/* Breadcrumbs */}
         <nav className="flex items-center text-sm">
           <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -75,7 +75,7 @@ export function Topbar() {
             <Input
               type="search"
               placeholder="Search cases..."
-              className="w-64 pl-9 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-saffron"
+              className="w-64 border-border bg-muted/60 pl-9 focus-visible:ring-1 focus-visible:ring-ring"
             />
           </div>
 
@@ -84,7 +84,7 @@ export function Topbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-crimson text-[10px] font-medium text-white flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-white">
                   3
                 </span>
               </Button>
@@ -111,7 +111,7 @@ export function Topbar() {
                 </span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="justify-center text-saffron">
+              <DropdownMenuItem className="justify-center text-foreground">
                 View all notifications
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -121,7 +121,7 @@ export function Topbar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center text-xs font-semibold text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
                   AS
                 </div>
                 <span className="hidden md:inline text-sm font-medium">ai4bharat_user</span>

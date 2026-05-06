@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Check, ArrowRight, ArrowLeft, Upload } from 'lucide-react';
+import { AlertCircle, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExtractionStep1 } from './ExtractionStep1';
 import { ExtractionStep2 } from './ExtractionStep2';
@@ -44,7 +44,7 @@ export function ExtractionUploadFlow() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Case Processing Workflow"
         description="Upload court judgment PDF for AI-powered extraction, human review, and action plan generation"
@@ -62,8 +62,8 @@ export function ExtractionUploadFlow() {
       )}
 
       {/* STEPPER */}
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="pt-5">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => (
               <div key={step.number} className="flex items-center flex-1">
@@ -74,11 +74,11 @@ export function ExtractionUploadFlow() {
                 >
                   <div
                     className={cn(
-                      'w-12 h-12 rounded-full flex items-center justify-center font-semibold transition-all text-sm',
+                      'flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold transition-all',
                       currentStep > step.number
-                        ? 'bg-green-600 text-white'
+                        ? 'bg-primary text-white'
                         : currentStep === step.number
-                          ? 'bg-blue-600 text-white border-2 border-blue-800'
+                          ? 'border-2 border-primary bg-slate-700 text-white'
                           : 'bg-slate-200 text-slate-600'
                     )}
                   >
@@ -96,7 +96,7 @@ export function ExtractionUploadFlow() {
                   <div
                     className={cn(
                       'flex-1 h-1 mx-2',
-                      currentStep > step.number ? 'bg-green-600' : 'bg-slate-300'
+                      currentStep > step.number ? 'bg-primary' : 'bg-slate-300'
                     )}
                   />
                 )}
@@ -105,7 +105,7 @@ export function ExtractionUploadFlow() {
           </div>
 
           {/* STATUS BADGES */}
-          <div className="mt-6 pt-6 border-t flex flex-wrap gap-3 justify-end">
+          <div className="mt-4 flex flex-wrap justify-end gap-2 border-t pt-4">
             {steps.map(step => (
               <div key={step.number} className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Step {step.number}:</span>
@@ -117,14 +117,14 @@ export function ExtractionUploadFlow() {
       </Card>
 
       {/* STEP CONTENT */}
-      <div className="min-h-[600px]">
+      <div className="min-h-[560px]">
         {currentStep === 1 && <ExtractionStep1 />}
         {currentStep === 2 && <ExtractionStep2 />}
         {currentStep === 3 && <ExtractionStep3 />}
       </div>
 
       {/* NAVIGATION */}
-      <div className="flex gap-3 justify-between">
+      <div className="flex justify-between gap-3">
         <Button
           onClick={prevStep}
           disabled={currentStep <= 1 || isLoading}
@@ -148,7 +148,7 @@ export function ExtractionUploadFlow() {
               (!extraction ||
                 (extraction.reviewStatus !== 'approved' && extraction.reviewStatus !== 'approved_with_edits')))
           }
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-primary hover:bg-primary/90"
         >
           {isLoading ? 'Processing...' : 'Next'}
           <ArrowRight className="h-4 w-4 ml-2" />
