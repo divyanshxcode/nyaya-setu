@@ -124,7 +124,7 @@ export function Topbar() {
                 <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center text-xs font-semibold text-white">
                   AS
                 </div>
-                <span className="hidden md:inline text-sm font-medium">Dr. Amit Sharma</span>
+                <span className="hidden md:inline text-sm font-medium">ai4bharat_user</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

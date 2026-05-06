@@ -36,6 +36,7 @@ interface PriorityBadgeProps {
 }
 
 const priorityConfig: Record<Priority, { label: string; dotColor: string }> = {
+  critical: { label: 'Critical', dotColor: 'bg-red-600' },
   high: { label: 'High', dotColor: 'bg-crimson' },
   medium: { label: 'Medium', dotColor: 'bg-amber' },
   low: { label: 'Low', dotColor: 'bg-jade' },

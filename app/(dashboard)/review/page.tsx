@@ -211,6 +211,7 @@ function StatusBadge({ status }: { status: ReviewStatus }) {
   const config = {
     pending_review: { icon: Clock, color: 'bg-saffron-light text-amber', label: 'Pending' },
     approved: { icon: CheckCircle, color: 'bg-jade-light text-jade', label: 'Approved' },
+    approved_with_edits: { icon: CheckCircle, color: 'bg-jade-light text-jade', label: 'Approved with edits' },
     rejected: { icon: XCircle, color: 'bg-crimson-light text-crimson', label: 'Rejected' },
     needs_edit: { icon: Edit, color: 'bg-blue-50 text-blue-700', label: 'Needs Edit' },
   };

@@ -29,7 +29,7 @@ const navigationGroups = [
   {
     label: 'Case Management',
     items: [
-      { name: 'Upload Judgment', href: '/upload', icon: Upload },
+      { name: 'AI Action Plan', href: '/upload', icon: Upload },
       { name: 'All Cases', href: '/cases', icon: FileText },
       { name: 'Review Queue', href: '/review', icon: ClipboardCheck },
       { name: 'Action Plans', href: '/actions', icon: ListTodo },

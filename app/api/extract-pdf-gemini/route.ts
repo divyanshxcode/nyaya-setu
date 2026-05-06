@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     fs.writeFileSync(tempFilePath, buffer);
 
     // Initialize Gemini model
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
     // Read the file as base64 for direct upload
     const fileContent = fs.readFileSync(tempFilePath);
