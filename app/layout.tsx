@@ -16,11 +16,14 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Nyaya-Setu | Court Case Monitoring System',
-  description: 'AI-powered judicial decision-support platform for the Government of India',
-  generator: 'v0.app',
+  title: 'Nyaya-Setu | AI Court Order Action Plans',
+  description: 'AI-assisted court order extraction, human review, and action plan generation for public-sector legal teams.',
   icons: {
     icon: [
+      {
+        url: '/icon.svg',
+        type: 'image/svg+xml',
+      },
       {
         url: '/icon-light-32x32.png',
         media: '(prefers-color-scheme: light)',
@@ -29,11 +32,8 @@ export const metadata: Metadata = {
         url: '/icon-dark-32x32.png',
         media: '(prefers-color-scheme: dark)',
       },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
     ],
+    shortcut: '/icon.svg',
     apple: '/apple-icon.png',
   },
 }

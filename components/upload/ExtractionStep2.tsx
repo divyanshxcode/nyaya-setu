@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useExtraction } from '@/lib/extraction-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,15 +32,53 @@ const fieldSections = {
   'Legal & Consequences': ['legalSections', 'penaltiesOrConsequences', 'nextHearingDate', 'additionalRemarks'],
 } as Record<string, (keyof ExtractedCaseDetail)[]>;
 
+const processingMessages = [
+  'Analyzing reviewed case details',
+  'Finding deadlines and hearing dates',
+  'Mapping compliance requirements',
+  'Checking appeal and risk indicators',
+  'Assigning priorities and next steps',
+  'Preparing the action plan',
+];
+
 function getConfidenceBadgeColor(score: number): string {
   if (score >= 85) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
   if (score >= 60) return 'bg-amber-50 text-amber-700 border-amber-200';
   return 'bg-red-50 text-red-700 border-red-200';
 }
 
+function ActionPlanProcessing({
+  message,
+}: {
+  message: string;
+}) {
+  return (
+    <Card className="border-slate-200 shadow-sm">
+      <CardContent className="flex min-h-[520px] flex-col items-center justify-center gap-5 p-8 text-center">
+        <div className="relative flex h-32 w-32 items-center justify-center">
+          <div className="absolute h-28 w-28 animate-ping rounded-full bg-green-100" />
+          <div className="absolute h-24 w-24 rounded-full border-8 border-slate-200" />
+          <div className="absolute h-24 w-24 animate-spin rounded-full border-8 border-transparent border-t-green-600 border-r-green-600" />
+          <div className="relative h-12 w-12 rounded-full bg-green-600 shadow-lg shadow-green-600/20" />
+          <div className="absolute h-4 w-4 rounded-full bg-white" />
+          </div>
+
+        <div className="space-y-2">
+          <h3 className="text-xl font-bold text-foreground">Generating Action Plan</h3>
+          <p className="text-base font-medium text-slate-700">{message}</p>
+          <p className="text-sm text-muted-foreground">
+            This usually takes a few seconds after approval.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ExtractionStep2() {
   const {
     extraction,
+    isLoading,
     updateFieldValue,
     approveExtraction,
     rejectExtraction,
@@ -50,6 +88,22 @@ export function ExtractionStep2() {
   const [reviewerNotes, setReviewerNotes] = useState('');
   const [editingField, setEditingField] = useState<keyof ExtractedCaseDetail | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setMessageIndex(0);
+      return;
+    }
+
+    const messageTimer = window.setInterval(() => {
+      setMessageIndex(prev => (prev + 1) % processingMessages.length);
+    }, 1500);
+
+    return () => {
+      window.clearInterval(messageTimer);
+    };
+  }, [isLoading]);
 
   if (!extraction) {
     return (
@@ -87,6 +141,14 @@ export function ExtractionStep2() {
       setEditingField(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <ActionPlanProcessing
+        message={processingMessages[messageIndex]}
+      />
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.08fr)_minmax(420px,0.92fr)]">

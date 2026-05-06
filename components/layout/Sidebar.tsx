@@ -13,7 +13,6 @@ import {
   Scale,
   BarChart3,
   Settings,
-  LogOut,
   Menu,
   X,
 } from 'lucide-react';

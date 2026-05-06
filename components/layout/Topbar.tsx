@@ -16,7 +16,7 @@ import { usePathname } from 'next/navigation';
 
 const routeLabels: Record<string, string> = {
   '/dashboard': 'Dashboard',
-  '/upload': 'Upload Judgment',
+  '/upload': 'AI Action Plan',
   '/cases': 'All Cases',
   '/review': 'Review Queue',
   '/actions': 'Action Plans',

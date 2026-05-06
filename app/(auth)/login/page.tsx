@@ -125,9 +125,9 @@ export default function LoginPage() {
               </div>
               <span className="text-2xl font-bold text-navy">न्याय-सेतु</span>
             </div>
-            <CardTitle className="text-2xl">Welcome Back</CardTitle>
+            <CardTitle className="text-2xl">Welcome to Nyaya-Setu</CardTitle>
             <CardDescription>
-              Sign in to access the Court Case Monitoring System
+              Sign in to review court orders and generate action plans.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -168,7 +168,7 @@ export default function LoginPage() {
             <div className="mt-6 p-4 bg-saffron-light rounded-lg">
               <p className="text-sm font-medium text-navy mb-1">Demo Credentials</p>
               <p className="text-xs text-navy/70 mb-3">
-                Employee ID: <code className="bg-white px-1 rounded">usr_Ai4Bharat</code> |
+                Employee ID: <code className="bg-white px-1 rounded">user_Ai4Bharat</code> |
                 Password: <code className="bg-white px-1 rounded">demo123</code>
               </p>
               <Button

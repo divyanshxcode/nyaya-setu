@@ -228,6 +228,35 @@ function ActionItemCard({
   );
 }
 
+function DetailBlock({
+  title,
+  value,
+  tone = 'default',
+}: {
+  title: string;
+  value?: string;
+  tone?: 'default' | 'highlight';
+}) {
+  if (!value || value === 'Not Found') return null;
+
+  return (
+    <div
+      className={
+        tone === 'highlight'
+          ? 'rounded-lg border border-amber-200 bg-amber-50 p-4'
+          : 'rounded-lg border border-slate-200 bg-slate-50 p-4'
+      }
+    >
+      <p className={tone === 'highlight' ? 'text-sm font-bold text-amber-900' : 'text-sm font-bold text-slate-800'}>
+        {title}
+      </p>
+      <p className={tone === 'highlight' ? 'mt-2 text-base font-semibold leading-7 text-amber-950' : 'mt-2 text-base leading-7 text-foreground'}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export function ExtractionStep3() {
   const {
     extraction,
@@ -324,8 +353,25 @@ export function ExtractionStep3() {
             <CardHeader className="pb-1.5">
               <CardTitle className="text-lg font-bold">Executive Summary</CardTitle>
             </CardHeader>
-            <CardContent className="pt-0">
+            <CardContent className="space-y-3 pt-0">
+              <DetailBlock
+                title="Final Judgment"
+                value={caseDetails?.additionalRemarks || caseDetails?.natureOfCase || caseDetails?.caseDetails}
+                tone="highlight"
+              />
               <p className="text-base font-medium leading-7 text-foreground">{actionPlan.executiveSummary}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-1.5">
+              <CardTitle className="text-lg font-bold">Order Intelligence</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 pt-0 md:grid-cols-2">
+              <DetailBlock title="Key Directives" value={caseDetails?.keyDirectionsOrOrders} />
+              <DetailBlock title="Relevant Timelines" value={caseDetails?.relevantTimelines} />
+              <DetailBlock title="Legal Sections" value={caseDetails?.legalSections} />
+              <DetailBlock title="Penalties or Consequences" value={caseDetails?.penaltiesOrConsequences} />
             </CardContent>
           </Card>
 
@@ -525,11 +571,17 @@ export function ExtractionStep3() {
                     {actionPlan.recommendedDocumentation.map((doc, idx) => (
                       <div key={idx} className="rounded-md border border-slate-200 px-3 py-3">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-foreground">{doc.documentType}</p>
+                          <p className="text-sm font-semibold text-foreground">
+                            {doc.documentType || `Required Document ${idx + 1}`}
+                          </p>
                           <Badge className={`border ${getPriorityColor(doc.priority)}`}>{doc.priority}</Badge>
                         </div>
-                        <p className="mt-1 text-sm text-muted-foreground">{doc.purpose}</p>
-                        <p className="mt-2 text-xs text-muted-foreground">{formatDate(doc.deadline)}</p>
+                        <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                          {doc.purpose || 'Prepare supporting documentation for compliance review.'}
+                        </p>
+                        <Badge variant="outline" className="mt-2 h-5 rounded-full px-2 text-[11px]">
+                          {formatDate(doc.deadline)}
+                        </Badge>
                       </div>
                     ))}
                   </div>

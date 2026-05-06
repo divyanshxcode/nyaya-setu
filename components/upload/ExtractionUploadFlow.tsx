@@ -14,9 +14,9 @@ import { ExtractionStep2 } from './ExtractionStep2';
 import { ExtractionStep3 } from './ExtractionStep3';
 
 const steps = [
-  { number: 1 as const, title: 'Upload', description: 'Upload PDF', status: 'upload' },
-  { number: 2 as const, title: 'Extract & Review', description: 'Human review', status: 'verified' },
-  { number: 3 as const, title: 'Action Plan', description: 'AI-generated plan', status: 'plan' },
+  { number: 1 as const, title: 'Upload', description: 'Court order PDF', status: 'upload' },
+  { number: 2 as const, title: 'Review', description: 'Verify extraction', status: 'verified' },
+  { number: 3 as const, title: 'Action Plan', description: 'AI-drafted tasks', status: 'plan' },
 ];
 
 export function ExtractionUploadFlow() {
@@ -48,8 +48,8 @@ export function ExtractionUploadFlow() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Case Processing Workflow"
-        description="Upload court judgment PDF for AI-powered extraction, human review, and action plan generation"
+        title="AI Action Plan Generator"
+        description="Upload a court order, verify extracted case details, and generate a structured action plan."
       />
 
       {/* ERROR ALERT */}
