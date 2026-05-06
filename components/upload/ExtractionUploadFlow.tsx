@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useExtraction } from '@/lib/extraction-context';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { AlertCircle, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExtractionStep1 } from './ExtractionStep1';
 import { ExtractionStep2 } from './ExtractionStep2';
@@ -19,7 +20,8 @@ const steps = [
 ];
 
 export function ExtractionUploadFlow() {
-  const { currentStep, extraction, actionPlan, isLoading, error, nextStep, prevStep, goToStep } =
+  const router = useRouter();
+  const { currentStep, extraction, actionPlan, isLoading, error, prevStep, goToStep } =
     useExtraction();
 
   const getStatusBadge = (stepNumber: number) => {
@@ -63,18 +65,18 @@ export function ExtractionUploadFlow() {
 
       {/* STEPPER */}
       <Card className="border-slate-200 shadow-sm">
-        <CardContent className="pt-5">
-          <div className="flex items-center justify-between">
+        <CardContent className="p-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(40px,0.7fr)_minmax(0,1fr)_minmax(40px,0.7fr)_minmax(0,1fr)] items-center gap-2">
             {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center flex-1">
+              <React.Fragment key={step.number}>
                 <button
                   onClick={() => goToStep(step.number)}
                   disabled={isLoading}
-                  className="flex items-center gap-3 flex-1 hover:opacity-80 transition-opacity"
+                  className="flex items-center justify-center gap-2 transition-opacity hover:opacity-80"
                 >
                   <div
                     className={cn(
-                      'flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold transition-all',
+                      'flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-all',
                       currentStep > step.number
                         ? 'bg-primary text-white'
                         : currentStep === step.number
@@ -85,27 +87,27 @@ export function ExtractionUploadFlow() {
                     {currentStep > step.number ? <Check className="h-5 w-5" /> : step.number}
                   </div>
                   <div className="hidden sm:block text-left">
-                    <p className={cn('text-sm font-semibold', currentStep >= step.number ? 'text-foreground' : 'text-muted-foreground')}>
+                    <p className={cn('text-xs font-semibold', currentStep >= step.number ? 'text-foreground' : 'text-muted-foreground')}>
                       {step.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">{step.description}</p>
+                    <p className="text-[11px] text-muted-foreground">{step.description}</p>
                   </div>
                 </button>
 
                 {index < steps.length - 1 && (
                   <div
                     className={cn(
-                      'flex-1 h-1 mx-2',
+                      'h-0.5 w-full',
                       currentStep > step.number ? 'bg-primary' : 'bg-slate-300'
                     )}
                   />
                 )}
-              </div>
+              </React.Fragment>
             ))}
           </div>
 
           {/* STATUS BADGES */}
-          <div className="mt-4 flex flex-wrap justify-end gap-2 border-t pt-4">
+          <div className="mt-3 flex flex-wrap justify-end gap-2 border-t pt-3">
             {steps.map(step => (
               <div key={step.number} className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Step {step.number}:</span>
@@ -116,43 +118,38 @@ export function ExtractionUploadFlow() {
         </CardContent>
       </Card>
 
+      {currentStep > 1 && (
+        <div className="flex items-center justify-between gap-3">
+          <Button
+            onClick={prevStep}
+            disabled={isLoading}
+            variant="outline"
+            size="sm"
+            className="bg-white"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Previous
+          </Button>
+
+          {currentStep === 3 && (
+            <Button
+              onClick={() => router.push('/cases')}
+              disabled={isLoading || !actionPlan}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Submit
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* STEP CONTENT */}
       <div className="min-h-[560px]">
         {currentStep === 1 && <ExtractionStep1 />}
         {currentStep === 2 && <ExtractionStep2 />}
         {currentStep === 3 && <ExtractionStep3 />}
-      </div>
-
-      {/* NAVIGATION */}
-      <div className="flex justify-between gap-3">
-        <Button
-          onClick={prevStep}
-          disabled={currentStep <= 1 || isLoading}
-          variant="outline"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-
-        <div className="text-sm text-muted-foreground">
-          Step {currentStep} of {steps.length}
-        </div>
-
-        <Button
-          onClick={nextStep}
-          disabled={
-            currentStep >= steps.length ||
-            isLoading ||
-            (currentStep === 1 && !extraction?.pdfFile) ||
-            (currentStep === 2 &&
-              (!extraction ||
-                (extraction.reviewStatus !== 'approved' && extraction.reviewStatus !== 'approved_with_edits')))
-          }
-          className="bg-primary hover:bg-primary/90"
-        >
-          {isLoading ? 'Processing...' : 'Next'}
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
       </div>
     </div>
   );

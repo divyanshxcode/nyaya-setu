@@ -29,7 +29,7 @@ const navigationGroups = [
   {
     label: 'Case Management',
     items: [
-      { name: 'AI Action Plan', href: '/upload', icon: Upload },
+      { name: 'AI Action Plan', href: '/upload', icon: Upload, badge: 'MVP' },
       { name: 'All Cases', href: '/cases', icon: FileText },
       { name: 'Review Queue', href: '/review', icon: ClipboardCheck },
       { name: 'Action Plans', href: '/actions', icon: ListTodo },
@@ -127,7 +127,12 @@ export function Sidebar({ className }: SidebarProps) {
                         )}
                       >
                         <item.icon className="h-5 w-5 shrink-0" />
-                        {item.name}
+                        <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                        {'badge' in item && item.badge && (
+                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none text-emerald-700">
+                            {item.badge}
+                          </span>
+                        )}
                       </Link>
                     </li>
                   );

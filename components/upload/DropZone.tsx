@@ -59,10 +59,10 @@ export function DropZone({ onFileSelect, file, onClear }: DropZoneProps) {
 
   if (file) {
     return (
-      <div className="border-2 border-jade border-dashed rounded-xl p-8 bg-jade-light/50">
+      <div className="rounded-xl border-2 border-dashed border-jade bg-jade-light/50 p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-jade/10 flex items-center justify-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-jade/10">
               <FileText className="h-6 w-6 text-jade" />
             </div>
             <div>
@@ -74,7 +74,7 @@ export function DropZone({ onFileSelect, file, onClear }: DropZoneProps) {
           </div>
           <button
             onClick={onClear}
-            className="p-2 hover:bg-jade/10 rounded-lg transition-colors"
+            className="rounded-lg p-2 transition-colors hover:bg-jade/10"
             aria-label="Remove file"
           >
             <X className="h-5 w-5 text-muted-foreground" />
@@ -91,7 +91,7 @@ export function DropZone({ onFileSelect, file, onClear }: DropZoneProps) {
       onDragOver={handleDrag}
       onDrop={handleDrop}
       className={cn(
-        'border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer',
+        'cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all',
         isDragging
           ? 'border-saffron bg-saffron-light/50'
           : 'border-border hover:border-saffron/50 hover:bg-muted/30'
@@ -108,7 +108,7 @@ export function DropZone({ onFileSelect, file, onClear }: DropZoneProps) {
         <div className="flex flex-col items-center gap-4">
           <div
             className={cn(
-              'w-16 h-16 rounded-xl flex items-center justify-center transition-colors',
+              'flex h-14 w-14 items-center justify-center rounded-xl transition-colors',
               isDragging ? 'bg-saffron text-white' : 'bg-navy text-white'
             )}
           >
@@ -118,7 +118,7 @@ export function DropZone({ onFileSelect, file, onClear }: DropZoneProps) {
             <p className="font-medium text-foreground">
               Drop judgment PDF here or click to browse
             </p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground">
               Accepts PDF files only (max 50MB)
             </p>
           </div>

@@ -24,13 +24,12 @@ export interface StructuredPDFData {
 }
 
 async function extractViaApi(
-  file: File,
-  endpoint: '/api/extract-pdf' | '/api/extract-pdf-gemini'
+  file: File
 ): Promise<StructuredPDFData> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(endpoint, {
+  const response = await fetch('/api/extract-pdf', {
     method: 'POST',
     body: formData,
   });
@@ -49,32 +48,12 @@ async function extractViaApi(
   return data;
 }
 
-async function extractWithFallback(file: File): Promise<StructuredPDFData> {
-  try {
-    return await extractViaApi(file, '/api/extract-pdf');
-  } catch (localError) {
-    console.warn('Local PDF extraction failed, trying Gemini OCR fallback:', localError);
-
-    try {
-      return await extractViaApi(file, '/api/extract-pdf-gemini');
-    } catch (geminiError) {
-      if (geminiError instanceof Error) {
-        throw geminiError;
-      }
-      if (localError instanceof Error) {
-        throw localError;
-      }
-      throw new Error('Failed to extract PDF');
-    }
-  }
-}
-
 export async function extractTextFromPDF(
   file: File,
   onProgress?: (progress: ExtractionProgress) => void
 ): Promise<string> {
   try {
-    const data = await extractWithFallback(file);
+    const data = await extractViaApi(file);
 
     // Notify progress
     if (onProgress) {
@@ -100,7 +79,7 @@ export async function extractStructuredDataFromPDF(
   file: File
 ): Promise<StructuredPDFData> {
   try {
-    return await extractWithFallback(file);
+    return await extractViaApi(file);
   } catch (error) {
     console.error('PDF extraction error:', error);
     if (error instanceof Error) {

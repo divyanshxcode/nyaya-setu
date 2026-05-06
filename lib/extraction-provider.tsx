@@ -25,6 +25,8 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [shouldExtract, setShouldExtract] = useState(false);
   const pdfFileRef = useRef<File | null>(null);
+  const extractionInFlightRef = useRef(false);
+  const actionPlanInFlightRef = useRef(false);
 
   // Listen for fallback data events
   useEffect(() => {
@@ -47,6 +49,7 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
     console.log('📤 setFile called with:', file.name, file.type, file.size);
     pdfFileRef.current = file;
     setError(null);
+    setActionPlan(null);
     setExtraction(null); // Reset extraction
     setShouldExtract(true); // Trigger extraction
     console.log('✅ File set, shouldExtract triggered');
@@ -158,7 +161,13 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
       return;
     }
 
+    if (actionPlan || actionPlanInFlightRef.current) {
+      setCurrentStep(3);
+      return;
+    }
+
     try {
+      actionPlanInFlightRef.current = true;
       setIsLoading(true);
       setError(null);
 
@@ -173,9 +182,10 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
       const message = err instanceof Error ? err.message : 'Failed to generate action plan';
       setError(message);
     } finally {
+      actionPlanInFlightRef.current = false;
       setIsLoading(false);
     }
-  }, [extraction]);
+  }, [extraction, actionPlan]);
 
   const updateActionItemStatus = useCallback((actionId: string, status: string) => {
     setActionPlan(prev => {
@@ -221,31 +231,12 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
   const nextStep = useCallback(async () => {
     // If moving from Step 2 to Step 3, generate action plan first
     if (currentStep === 2 && extraction?.extractedDetails && !actionPlan) {
-      console.log('📋 Generating action plan before moving to Step 3...');
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const plan = await generateComprehensiveActionPlan(
-          extraction.extractedDetails,
-          extraction.rawPdfText
-        );
-        
-        console.log('✅ Action plan generated');
-        setActionPlan(plan);
-        setCurrentStep(3);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to generate action plan';
-        console.error('❌ Action plan generation failed:', message);
-        setError(message);
-      } finally {
-        setIsLoading(false);
-      }
+      await generateActionPlan();
     } else {
       // For other steps, just advance
       setCurrentStep(prev => (prev < 3 ? (prev + 1) as ExtractionStep : prev));
     }
-  }, [currentStep, extraction, actionPlan]);
+  }, [currentStep, extraction, actionPlan, generateActionPlan]);
 
   const prevStep = useCallback(() => {
     setCurrentStep(prev => (prev > 1 ? (prev - 1) as ExtractionStep : prev));
@@ -313,19 +304,35 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
 
     const initializeExtraction = async () => {
       console.log('🚀 initializeExtraction started');
-      if (!pdfFileRef.current || extraction) {
+      const file = pdfFileRef.current;
+
+      if (!file || extraction || extractionInFlightRef.current) {
         console.log('❌ Stopping extraction: pdfFileRef.current:', !!pdfFileRef.current, 'extraction:', !!extraction);
         setShouldExtract(false);
         return;
       }
 
       try {
+        extractionInFlightRef.current = true;
         setIsLoading(true);
         setError(null);
-        console.log('📄 Extracting text from PDF:', pdfFileRef.current?.name);
+        console.log('📄 Extracting text from PDF:', file.name);
+
+        const pendingExtraction: CaseExtractionState = {
+          id: `extraction-${Date.now()}`,
+          step: 1,
+          pdfFile: file,
+          rawPdfText: '',
+          extractedDetails: null,
+          extractedFieldsWithMeta: [],
+          reviewStatus: 'pending_review',
+          createdAt: new Date().toISOString(),
+        };
+
+        setExtraction(pendingExtraction);
 
         // Extract text from PDF
-        const pdfText = await extractTextFromPDF(pdfFileRef.current);
+        const pdfText = await extractTextFromPDF(file);
 
         if (!isMounted) {
           console.log('⚠️ Component unmounted, skipping state update');
@@ -336,14 +343,9 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
 
         // Initialize extraction state
         const newExtraction: CaseExtractionState = {
-          id: `extraction-${Date.now()}`,
+          ...pendingExtraction,
           step: 2,
-          pdfFile: pdfFileRef.current,
           rawPdfText: pdfText,
-          extractedDetails: null,
-          extractedFieldsWithMeta: [],
-          reviewStatus: 'pending_review',
-          createdAt: new Date().toISOString(),
         };
 
         setExtraction(newExtraction);
@@ -380,6 +382,7 @@ export function ExtractionProvider({ children }: ExtractionProviderProps) {
         setError(message);
         setCurrentStep(1);
       } finally {
+        extractionInFlightRef.current = false;
         if (isMounted) {
           setIsLoading(false);
           setShouldExtract(false);

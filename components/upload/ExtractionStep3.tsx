@@ -20,7 +20,6 @@ import {
   Clock3,
   Download,
   FileJson,
-  ShieldAlert,
 } from 'lucide-react';
 import type { ActionItem, ActionStatus, Priority } from '@/types';
 
@@ -77,6 +76,85 @@ function SectionTitle({
   );
 }
 
+function MetricsSummary({
+  total,
+  urgent,
+  nearestDeadline,
+  riskLevel,
+}: {
+  total: number;
+  urgent: number;
+  nearestDeadline: string;
+  riskLevel: Priority;
+}) {
+  const rows = [
+    ['Total actions', total],
+    ['Urgent now', urgent],
+    ['Nearest deadline', nearestDeadline],
+    [
+      'Risk level',
+      <Badge key="risk" className={`border ${getPriorityColor(riskLevel)}`}>
+        {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
+      </Badge>,
+    ],
+  ] as const;
+
+  return (
+    <Card className="border-slate-200 shadow-sm">
+      <CardContent className="p-3">
+        <p className="mb-2 text-lg font-bold text-foreground">Plan Snapshot</p>
+        <div className="space-y-1.5">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex items-center justify-between gap-3 text-base">
+              <span className="font-bold text-slate-700">{label}</span>
+              <span className={label === 'Urgent now' ? 'font-bold text-red-600' : 'font-semibold text-foreground'}>
+                {value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CaseDetailsSummary({
+  caseNumber,
+  court,
+  plaintiff,
+  defendant,
+}: {
+  caseNumber?: string;
+  court?: string;
+  plaintiff?: string;
+  defendant?: string;
+}) {
+  const rows = [
+    ['Case number', caseNumber || 'Not found'],
+    ['Court', court || 'Not found'],
+    ['Plaintiff', plaintiff || 'Not found'],
+    ['Defendant', defendant || 'Not found'],
+  ];
+
+  return (
+    <Card className="border-slate-200 shadow-sm">
+      <CardContent className="p-3">
+        <p className="mb-2 text-lg font-bold text-foreground">Case Details</p>
+        <div className="grid gap-x-5 gap-y-1.5 md:grid-cols-2">
+          {rows.map(([label, value]) => (
+            <div key={label} className="grid grid-cols-[104px_minmax(0,1fr)] items-start gap-2 text-base">
+              <span className="font-bold text-slate-700">
+                {label}
+              </span>
+              <span className="min-w-0 leading-6 text-slate-700">{value}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ActionItemCard({
   action,
   onStatusChange,
@@ -89,18 +167,18 @@ function ActionItemCard({
   onDeadlineChange: (value: string) => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1 space-y-1.5">
+    <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             {getStatusIcon(action.status)}
-            <h4 className="text-sm font-semibold text-foreground">{action.title}</h4>
+            <h4 className="text-sm font-bold text-foreground">{action.title}</h4>
             <Badge className={`border ${getPriorityColor(action.priority)}`}>{action.priority}</Badge>
             <Badge variant="outline" className="capitalize">
               {action.section}
             </Badge>
           </div>
-          <p className="text-sm leading-5 text-muted-foreground">{action.description}</p>
+          <p className="text-[13px] leading-5 text-muted-foreground">{action.description}</p>
         </div>
 
         <div className="grid w-full gap-2 sm:grid-cols-3 lg:w-[390px]">
@@ -152,6 +230,7 @@ function ActionItemCard({
 
 export function ExtractionStep3() {
   const {
+    extraction,
     actionPlan,
     isLoading,
     error,
@@ -161,6 +240,7 @@ export function ExtractionStep3() {
     exportActionPlanPDF,
     exportActionPlanJSON,
   } = useExtraction();
+  const caseDetails = extraction?.extractedDetails;
 
   const stats = useMemo(() => {
     if (!actionPlan) {
@@ -215,51 +295,20 @@ export function ExtractionStep3() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="flex items-center justify-between p-3.5">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total actions</p>
-              <p className="mt-2 text-3xl font-semibold text-foreground">{stats.total}</p>
-            </div>
-            <CheckCircle2 className="h-8 w-8 text-slate-300" />
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="flex items-center justify-between p-3.5">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Urgent now</p>
-              <p className="mt-2 text-3xl font-semibold text-red-600">{stats.urgent}</p>
-            </div>
-            <AlertTriangle className="h-8 w-8 text-red-200" />
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="flex items-center justify-between p-3.5">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nearest deadline</p>
-              <p className="mt-2 text-lg font-semibold text-foreground">{formatDate(stats.nearest || undefined)}</p>
-            </div>
-            <Clock3 className="h-8 w-8 text-slate-300" />
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 shadow-sm">
-          <CardContent className="flex items-center justify-between p-3.5">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Risk level</p>
-              <div className="mt-2">
-                <Badge className={`border ${getPriorityColor(stats.riskLevel as Priority)}`}>
-                  {stats.riskLevel.charAt(0).toUpperCase() + stats.riskLevel.slice(1)}
-                </Badge>
-              </div>
-            </div>
-            <ShieldAlert className="h-8 w-8 text-slate-300" />
-          </CardContent>
-        </Card>
+    <div className="space-y-3">
+      <div className="grid gap-2 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)]">
+        <CaseDetailsSummary
+          caseNumber={caseDetails?.caseNumber}
+          court={caseDetails?.court}
+          plaintiff={caseDetails?.plaintiff}
+          defendant={caseDetails?.defendant}
+        />
+        <MetricsSummary
+          total={stats.total}
+          urgent={stats.urgent}
+          nearestDeadline={formatDate(stats.nearest || undefined)}
+          riskLevel={stats.riskLevel as Priority}
+        />
       </div>
 
       {error && (
@@ -269,25 +318,25 @@ export function ExtractionStep3() {
         </div>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
-        <div className="space-y-4">
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,0.9fr)]">
+        <div className="space-y-3">
           <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Executive Summary</CardTitle>
+            <CardHeader className="pb-1.5">
+              <CardTitle className="text-lg font-bold">Executive Summary</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-sm leading-6 text-foreground">{actionPlan.executiveSummary}</p>
+              <p className="text-base font-medium leading-7 text-foreground">{actionPlan.executiveSummary}</p>
             </CardContent>
           </Card>
 
           <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-1.5">
               <div className="flex items-center justify-between gap-3">
                 <SectionTitle title="Action Items" count={actionPlan.actionItems.length} />
                 <div className="text-xs text-muted-foreground">Directly editable</div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3 pt-0">
+            <CardContent className="space-y-2.5 pt-0">
               {groupedActions.immediate.length > 0 && (
                 <div className="space-y-2.5">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

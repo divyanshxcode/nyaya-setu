@@ -34,8 +34,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Executive Dashboard"
-        description="Overview of court case monitoring and compliance status"
+        title="Central Dashboard"
+        description="The data here is simulated (due to unavailability of real data in prototype phase) This section will contain a central monitor to check all actions and summery"
       />
 
       {/* Stats Row */}

@@ -43,6 +43,7 @@ export function ExtractionStep2() {
     extraction,
     updateFieldValue,
     approveExtraction,
+    rejectExtraction,
     nextStep,
   } = useExtraction();
 
@@ -66,6 +67,10 @@ export function ExtractionStep2() {
   const handleApprove = async () => {
     await approveExtraction(reviewerNotes);
     await nextStep();
+  };
+
+  const handleReject = async () => {
+    await rejectExtraction(reviewerNotes || 'Rejected during review');
   };
 
   const handleEditField = (fieldKey: keyof ExtractedCaseDetail) => {
@@ -101,7 +106,7 @@ export function ExtractionStep2() {
               <div className="flex flex-wrap gap-2">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button className="bg-primary hover:bg-primary/90">
+                    <Button className="bg-green-600 hover:bg-green-700">
                       <Check className="mr-2 h-4 w-4" />
                       Approve
                     </Button>
@@ -115,7 +120,7 @@ export function ExtractionStep2() {
                     </AlertDialogHeader>
                     <div className="flex gap-3">
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleApprove} className="bg-primary">
+                      <AlertDialogAction onClick={handleApprove} className="bg-green-600 hover:bg-green-700">
                         Approve & Continue
                       </AlertDialogAction>
                     </div>
@@ -127,7 +132,11 @@ export function ExtractionStep2() {
                   Hold
                 </Button>
 
-                <Button variant="outline" className="border-red-200 text-red-700 hover:bg-red-50" disabled>
+                <Button
+                  variant="outline"
+                  className="border-red-200 text-red-700 hover:bg-red-50"
+                  onClick={handleReject}
+                >
                   <X className="mr-2 h-4 w-4" />
                   Reject
                 </Button>
@@ -137,7 +146,11 @@ export function ExtractionStep2() {
           <CardContent className="max-h-[720px] space-y-5 overflow-y-auto pt-0">
             {Object.entries(fieldSections).map(([sectionName, fieldKeys]) => (
               <div key={sectionName}>
-                <h3 className="mb-2 border-b pb-2 text-sm font-semibold text-foreground">{sectionName}</h3>
+                <div className="mb-3 flex justify-center">
+                  <span className="rounded-full bg-slate-950 px-4 py-1.5 text-sm font-bold text-white shadow-sm">
+                    {sectionName}
+                  </span>
+                </div>
                 <table className="w-full text-sm">
                   <tbody>
                     {fieldKeys.map(fieldKey => {
@@ -219,17 +232,9 @@ export function ExtractionStep2() {
 
       {/* RIGHT PANEL: PDF Viewer */}
       <div className="space-y-4">
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle>PDF Preview</CardTitle>
-            <CardDescription>Source document</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {extraction.pdfFile && (
-              <PDFViewerComponent file={extraction.pdfFile} />
-            )}
-          </CardContent>
-        </Card>
+        {extraction.pdfFile && (
+          <PDFViewerComponent file={extraction.pdfFile} />
+        )}
       </div>
     </div>
   );

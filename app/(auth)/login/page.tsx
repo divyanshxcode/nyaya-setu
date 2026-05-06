@@ -92,7 +92,6 @@ export default function LoginPage() {
             <div className="w-20 h-20 mx-auto mb-4 border-2 border-saffron/50 rounded-full flex items-center justify-center">
               <Scale className="h-10 w-10 text-saffron" />
             </div>
-            <p className="text-white/70 text-sm tracking-wider">GOVERNMENT OF INDIA</p>
           </div>
 
           {/* Logo and tagline */}

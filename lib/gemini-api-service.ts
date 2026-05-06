@@ -199,7 +199,7 @@ export async function extractCaseDetailsFromGemini(
 }> {
   try {
     console.log('🔗 Calling Gemini API (gemini-3-flash-preview) with', rawPdfText.length, 'characters');
-    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
 
     const systemPrompt = `You are a legal document parser. From the following court order text, extract the exact information for each of the fields listed below. Do not summarize or paraphrase. Use verbatim text from the document wherever possible. If a field is not found, return "Not Found". Return a JSON object with these exact keys and additional metadata for each field.`;
 
@@ -335,7 +335,7 @@ export async function generateComprehensiveActionPlan(
   rawPdfText: string
 ): Promise<GeneratedActionPlan> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' });
 
     const systemPrompt = `You are a senior legal compliance officer and case strategist. Based on the following verified court order details, generate a comprehensive, structured action plan for the organization or legal team. Be specific, practical, and detailed.
 
